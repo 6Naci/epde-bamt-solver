@@ -9,7 +9,6 @@ pio.renderers.default = "browser"
 
 
 def confidence_region_print(u_main, prepared_grid_main, title=None):
-
     mean_arr = np.zeros((u_main.shape[1], u_main.shape[2]))
     var_arr = np.zeros((u_main.shape[1], u_main.shape[2]))
 
@@ -29,13 +28,15 @@ def confidence_region_print(u_main, prepared_grid_main, title=None):
     lower_bound = lower_bound.reshape(-1)
 
     if prepared_grid_main.shape[1] == 2:
-
         fig = go.Figure(data=[
-            go.Mesh3d(x=prepared_grid_main[:, 0], y=prepared_grid_main[:, 1], z=mean_tens, name='Solution field', legendgroup='s', showlegend=True, color='lightpink',
+            go.Mesh3d(x=prepared_grid_main[:, 0], y=prepared_grid_main[:, 1], z=mean_tens, name='Solution field',
+                      legendgroup='s', showlegend=True, color='lightpink',
                       opacity=1),
-            go.Mesh3d(x=prepared_grid_main[:, 0], y=prepared_grid_main[:, 1], z=upper_bound, name='Confidence region', legendgroup='c', showlegend=True, color='blue',
+            go.Mesh3d(x=prepared_grid_main[:, 0], y=prepared_grid_main[:, 1], z=upper_bound, name='Confidence region',
+                      legendgroup='c', showlegend=True, color='blue',
                       opacity=0.20),
-            go.Mesh3d(x=prepared_grid_main[:, 0], y=prepared_grid_main[:, 1], z=lower_bound, name='Confidence region', legendgroup='c', color='blue', opacity=0.20)
+            go.Mesh3d(x=prepared_grid_main[:, 0], y=prepared_grid_main[:, 1], z=lower_bound, name='Confidence region',
+                      legendgroup='c', color='blue', opacity=0.20)
 
         ])
 

@@ -13,7 +13,6 @@ from TEDEouS.input_preprocessing import grid_prepare, bnd_prepare, operator_prep
 from TEDEouS.metrics import point_sort_shift_loss
 from TEDEouS.solver import point_sort_shift_solver
 
-
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 sys.path.append('../')
 device = torch.device('cpu')
@@ -37,7 +36,7 @@ def solver_equation_matrix(grid_res, CACHE, equation, equation_main, title):
 
     coord_list = [x, t]
 
-    grid = solver.grid_format_prepare(coord_list, mode='mat')
+    grid = solver.grid_format_prepare(coord_list, mode='NN')
     grid.to(device)
 
     sln = np.genfromtxt(f'data/{title}/wolfram_sln/wave_sln_{grid_res}.csv', delimiter=',')
@@ -61,10 +60,11 @@ def solver_equation_matrix(grid_res, CACHE, equation, equation_main, title):
 
     start = time.time()
 
-    matrix_model = solver.matrix_optimizer(grid, None, equation.solver_form(), equation.boundary_conditions(), lambda_bound=10,
+    matrix_model = solver.matrix_optimizer(grid, None, equation.solver_form(), equation.boundary_conditions(),
+                                           lambda_bound=10,
                                            verbose=True, learning_rate=1e-3, eps=1e-5, tmin=1000, tmax=1e6,
                                            use_cache=CACHE, cache_dir='../cache/', cache_verbose=True,
-                                           batch_size=None, save_always=True,  lp_par=lp_par, print_every=None,
+                                           batch_size=None, save_always=True, lp_par=lp_par, print_every=None,
                                            patience=5, loss_oscillation_window=100,
                                            no_improvement_patience=1000,
                                            model_randomize_parameter=1e-6, optimizer='Adam',
@@ -192,7 +192,6 @@ def solver_equation(equation, grid_res, CACHE, title):
                                     model_randomize_parameter=1e-6)
     end = time.time()
 
-
     error_rmse = torch.sqrt(torch.mean((sln_torch1 - model(grid)) ** 2))
 
     prepared_grid, grid_dict, point_type = grid_prepare(grid)
@@ -204,7 +203,7 @@ def solver_equation(equation, grid_res, CACHE, title):
 
     print('Time taken {}= {}'.format(grid_res, end - start))
     print('RMSE {}= {}'.format(grid_res, error_rmse))
-    return u, prepared_grid, exp_dict_list
+    return u, prepared_grid, exp_dict_list, model
 
 # n_runs = 1
 # grid_res = 70

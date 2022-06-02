@@ -64,4 +64,3 @@ def eq_table(res, dict_main, dict_right, k):
     print(k)
 
     return dict_main, dict_right, k
-

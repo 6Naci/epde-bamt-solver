@@ -14,12 +14,11 @@ from func.transition_bs import view_for_create_eq
 from func import transition_bs as transform
 import dill as pickle
 
-
 if __name__ == '__main__':
 
     # initial params before fit-EPDE (global params)
     grid_res = 70
-    title = 'wave_equation' # name of the problem/equation
+    title = 'wave_equation'  # name of the problem/equation
     test_iter_limit = 1
     # Load data
     df = pd.read_csv(f'data/{title}/wolfram_sln/wave_sln_{grid_res}.csv', header=None)
@@ -27,8 +26,15 @@ if __name__ == '__main__':
     df_main, epde_search_obj = epde_equation(df, test_iter_limit, grid_res, title)
     # need dimensionality, max_deriv_order on exit
 
-    sample_k = 2
+    # # Load data and Preprocessing
+    # df_main = pd.read_csv(f'data/{title}/result/output_{grid_res}_main.csv', index_col='Unnamed: 0', sep='\t',
+    #                       encoding='utf-8')
+
+    sample_k = 35
     equations = bamt.bs_experiment(df_main, sample_k, grid_res, title)
+
+    # with open(f'data/{title}/data_equations.pickle', 'wb') as f:
+    #     pickle.dump(equations, f, pickle.HIGHEST_PROTOCOL)
 
     # # save and open object
     # with open(f'data/{title}/data_object.pickle', 'wb') as f:
@@ -46,16 +52,38 @@ if __name__ == '__main__':
     u_main, prepared_grid_main = [], []
     CACHE = True
 
-    # for solver.matrix_optimizer
-    solver_inp = []
-    for equation in equations:
-        text_form = view_for_create_eq(equation)
-        eq = translate_equation(text_form, epde_search_obj.pool)
+    # # for solver.matrix_optimizer
+    # solver_inp = []
+    # for equation in equations:
+    #     text_form = view_for_create_eq(equation)
+    #     eq = translate_equation(text_form, epde_search_obj.pool)
+    #
+    #     equation_main = transform.solver_view(equation)
+    #     # eq = translate_equation(text_form, pool)
+    #     solver_inp.append((eq.solver_form(), eq.boundary_conditions()))
+    #     u, prepared_grid, exp_dict_list = solver_eq.solver_equation_matrix(grid_res, CACHE, eq, equation_main, title)
+    #     u = u.reshape(-1, grid_res + 1)
+    #     u = u.detach().numpy()
+    #     if not len(u_main):
+    #         u_main = [u]
+    #         prepared_grid_main = prepared_grid
+    #     else:
+    #         u_main.append(u)
+    #
+    # exp_dict_list_main.append(exp_dict_list)
+    # exp_dict_list_flatten = [item for sublist in exp_dict_list_main for item in sublist]
+    # df = pd.DataFrame(exp_dict_list_flatten)
+    # df.to_csv('data/wave_equation/cache/wave_experiment_matrix_ebs_2_{}_cache={}.csv'.format(grid_res, str(CACHE)))
+    #
+    # u_main = np.array(u_main)
+    #
+    # # save solution
+    # torch.save(u_main, f'data/{title}/solution/file_u_main_matrix.pt')
+    # torch.save(prepared_grid_main, f'data/{title}/solution/file_prepared_grid_main_matrix.pt')
 
-        equation_main = transform.solver_view(equation)
-        # eq = translate_equation(text_form, pool)
-        solver_inp.append((eq.solver_form(), eq.boundary_conditions()))
-        u, prepared_grid, exp_dict_list = solver_eq.solver_equation_matrix(grid_res, CACHE, eq, equation_main, title)
+    for equation in equations:
+        u, prepared_grid, exp_dict_list, model = solver_eq.solver_equation(equation, grid_res, CACHE, title)
+        print(model)
         u = u.reshape(-1, grid_res + 1)
         u = u.detach().numpy()
         if not len(u_main):
@@ -65,40 +93,18 @@ if __name__ == '__main__':
             u_main.append(u)
 
         exp_dict_list_main.append(exp_dict_list)
-        exp_dict_list_flatten = [item for sublist in exp_dict_list_main for item in sublist]
-        df = pd.DataFrame(exp_dict_list_flatten)
-        df.to_csv('data/wave_equation/cache/wave_experiment_matrix_ebs_2_{}_cache={}.csv'.format(grid_res, str(CACHE)))
 
+    exp_dict_list_flatten = [item for sublist in exp_dict_list_main for item in sublist]
+    df = pd.DataFrame(exp_dict_list_flatten)
+    df.to_csv(f'data/{title}/cache/{title}_ebs_2_{grid_res}_cache={str(CACHE)}.csv')
     u_main = np.array(u_main)
-    #
-    # # save solution
-    # torch.save(u_main, f'data/{title}/solution/file_u_main_matrix.pt')
-    # torch.save(prepared_grid_main, f'data/{title}/solution/file_prepared_grid_main_matrix.pt')
-
-
-    # for equation in equations:
-    #     u, prepared_grid, exp_dict_list = solver_eq.solver_equation(equation, grid_res, CACHE, title)
-    #     u = u.reshape(-1, grid_res + 1)
-    #     u = u.detach().numpy()
-    #     if not len(u_main):
-    #         u_main = [u]
-    #         prepared_grid_main = prepared_grid
-    #     else:
-    #         u_main.append(u)
-    #
-    #     exp_dict_list_main.append(exp_dict_list)
-    #
-    # exp_dict_list_flatten = [item for sublist in exp_dict_list_main for item in sublist]
-    # df = pd.DataFrame(exp_dict_list_flatten)
-    # df.to_csv(f'data/{title}/cache/{title}_ebs_2_{grid_res}_cache={str(CACHE)}.csv')
-    # u_main = np.array(u_main)
 
     # # save solution
-    # torch.save(u_main, f'data/{title}/solution/file_u_main.pt')
+    # torch.save(u_main, f'data/{title}/solution/file_u_main_{sample_k}.pt')
     # torch.save(prepared_grid_main, f'data/{title}/solution/file_prepared_grid_main.pt')
 
     # # load solution
     # u_main = torch.load(f'data/{title}/solution/file_u_main.pt')
     # prepared_grid_main = torch.load(f'data/{title}/solution/file_prepared_grid_main.pt')
 
-    # conf_plt.confidence_region_print(u_main, prepared_grid_main)
+    conf_plt.confidence_region_print(u_main, prepared_grid_main)

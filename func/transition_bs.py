@@ -1,7 +1,7 @@
 import re
 
 
-def dev_variable(term, unknown_var, max_order): # for variable definition and write derivatives
+def dev_variable(term, unknown_var, max_order):  # for variable definition and write derivatives
     # for n in range(max_order):
     #     if 'du' in term or f'd^{n + 1}u' in term: # found out the order
     #         print(n + 1)
@@ -63,7 +63,8 @@ def solver_view(equation):
     equation_main = {}
     unknown_variables = {}  # x1, x2, ..., xn
     for i in range(dimensionality):
-        unknown_variables[f'x{i + 1}'] = dimensionality - 1 - i # x1 = 1, x2 = 0, because (epde = [t, x], solver = [x, t])
+        unknown_variables[
+            f'x{i + 1}'] = dimensionality - 1 - i  # x1 = 1, x2 = 0, because (epde = [t, x], solver = [x, t])
 
     for term_i, value_i in equation.items():
 
@@ -90,6 +91,7 @@ def solver_view(equation):
         equation_main[f'{term_i}'] = term_main
 
     return equation_main
+
 
 # params_ranges = ['power'] # {'power': (1, 1), 'freq': (0.95, 1.05), 'dim': (0, dimensionality)} or ['power', 'freq', 'dim'] for sin/cos
 
