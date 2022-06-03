@@ -28,6 +28,7 @@ def confidence_region_print(u_main, prepared_grid_main, title=None):
     lower_bound = lower_bound.reshape(-1)
 
     if prepared_grid_main.shape[1] == 2:
+        # building 3-dimensional graph
         fig = go.Figure(data=[
             go.Mesh3d(x=prepared_grid_main[:, 0], y=prepared_grid_main[:, 1], z=mean_tens, name='Solution field',
                       legendgroup='s', showlegend=True, color='lightpink',
@@ -52,6 +53,28 @@ def confidence_region_print(u_main, prepared_grid_main, title=None):
                           height=800, width=800
                           )
 
+        fig.show()
+
+        # building Heatmap solution field
+        fig = go.Figure(data=
+                        go.Contour(x=prepared_grid_main[:, 0],
+                                   y=prepared_grid_main[:, 1],
+                                   z=mean_tens,
+                                   contours_coloring='heatmap'))
+        fig.update_layout(
+            title_text='Visualization of the equation solution'
+        )
+        fig.show()
+
+        # building Heatmap the variance
+        fig = go.Figure(data=
+                        go.Contour(x=prepared_grid_main[:, 0],
+                                   y=prepared_grid_main[:, 1],
+                                   z=var_tens.reshape(-1),
+                                   contours_coloring='heatmap'))
+        fig.update_layout(
+            title_text='Visualization of the variance'
+        )
         fig.show()
 
     # # plot with matplotlib

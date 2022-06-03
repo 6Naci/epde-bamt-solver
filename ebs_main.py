@@ -19,7 +19,7 @@ if __name__ == '__main__':
     # initial params before fit-EPDE (global params)
     grid_res = 70
     title = 'wave_equation'  # name of the problem/equation
-    test_iter_limit = 1
+    test_iter_limit = 100 # how many times to launch algorithm (one time - 2-3 equations)
     # Load data
     df = pd.read_csv(f'data/{title}/wolfram_sln/wave_sln_{grid_res}.csv', header=None)
 
@@ -104,7 +104,7 @@ if __name__ == '__main__':
     # torch.save(prepared_grid_main, f'data/{title}/solution/file_prepared_grid_main.pt')
 
     # # load solution
-    # u_main = torch.load(f'data/{title}/solution/file_u_main.pt')
+    # u_main = torch.load(f'data/{title}/solution/file_u_main_{sample_k}.pt')
     # prepared_grid_main = torch.load(f'data/{title}/solution/file_prepared_grid_main.pt')
 
     conf_plt.confidence_region_print(u_main, prepared_grid_main)
