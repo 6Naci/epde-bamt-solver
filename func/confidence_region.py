@@ -1,9 +1,12 @@
 # for solver.py in SOLVER
+import math
+
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
 import plotly.graph_objs as go
 import plotly.io as pio
+import statistics
 
 pio.renderers.default = "browser"
 
@@ -11,17 +14,23 @@ pio.renderers.default = "browser"
 def confidence_region_print(u_main, prepared_grid_main, title=None):
     mean_arr = np.zeros((u_main.shape[1], u_main.shape[2]))
     var_arr = np.zeros((u_main.shape[1], u_main.shape[2]))
+    s_g_arr = np.zeros((u_main.shape[1], u_main.shape[2])) # population standard deviation of data.
+    s_arr = np.zeros((u_main.shape[1], u_main.shape[2])) # sample standard deviation of data
 
     for i in range(u_main.shape[1]):
         for j in range(u_main.shape[2]):
             mean_arr[i, j] = np.mean(u_main[:, i, j])
             var_arr[i, j] = np.var(u_main[:, i, j])
+            s_arr[i, j] = statistics.stdev(u_main[:, i, j])
 
     mean_tens = torch.from_numpy(mean_arr)
     var_tens = torch.from_numpy(var_arr)
+    s_g_arr = torch.from_numpy(var_arr) ** (1/2)
+    s_arr = torch.from_numpy(s_arr)
 
-    upper_bound = mean_tens + 1.96 * var_tens
-    lower_bound = mean_tens - 1.96 * var_tens
+    # Confidence region for the mean
+    upper_bound = mean_tens + 1.96 * s_arr / math.sqrt(len(u_main))
+    lower_bound = mean_tens - 1.96 * s_arr / math.sqrt(len(u_main))
 
     mean_tens = mean_tens.reshape(-1)
     upper_bound = upper_bound.reshape(-1)
