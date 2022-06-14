@@ -52,7 +52,7 @@ def bs_experiment(df, sample_k, mesh, title):
     for i in range(len(synth_data)):
         equation_res = {}
         for key, value in equations[i].items():
-            if abs(float(value)) > 0.02:
+            if abs(float(value)) > 0.001:
                 equation_res[key] = value
         equations_result.append(equation_res)
         print(f'{i + 1}.{equation_res}')

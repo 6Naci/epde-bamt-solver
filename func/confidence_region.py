@@ -11,7 +11,14 @@ import statistics
 pio.renderers.default = "browser"
 
 
-def confidence_region_print(u_main, prepared_grid_main, title=None):
+def get_rms(records):
+    """
+        Root-mean-square (rms)
+    """
+    return math.sqrt(sum([x ** 2 for x in records]) / len(records))
+
+
+def confidence_region_print(u, grid, u_main, prepared_grid_main, variance, title=None):
     mean_arr = np.zeros((u_main.shape[1], u_main.shape[2]))
     var_arr = np.zeros((u_main.shape[1], u_main.shape[2]))
     s_g_arr = np.zeros((u_main.shape[1], u_main.shape[2])) # population standard deviation of data.
@@ -39,22 +46,34 @@ def confidence_region_print(u_main, prepared_grid_main, title=None):
     if prepared_grid_main.shape[1] == 2:
         # building 3-dimensional graph
         fig = go.Figure(data=[
-            go.Mesh3d(x=prepared_grid_main[:, 0], y=prepared_grid_main[:, 1], z=mean_tens, name='Solution field',
+            go.Mesh3d(x=prepared_grid_main[:, 1], y=prepared_grid_main[:, 0], z=mean_tens, name='Solution field',
                       legendgroup='s', showlegend=True, color='lightpink',
                       opacity=1),
-            go.Mesh3d(x=prepared_grid_main[:, 0], y=prepared_grid_main[:, 1], z=upper_bound, name='Confidence region',
+            go.Mesh3d(x=prepared_grid_main[:, 1], y=prepared_grid_main[:, 0], z=upper_bound, name='Confidence region',
                       legendgroup='c', showlegend=True, color='blue',
                       opacity=0.20),
-            go.Mesh3d(x=prepared_grid_main[:, 0], y=prepared_grid_main[:, 1], z=lower_bound, name='Confidence region',
-                      legendgroup='c', color='blue', opacity=0.20)
-
+            go.Mesh3d(x=prepared_grid_main[:, 1], y=prepared_grid_main[:, 0], z=lower_bound, name='Confidence region',
+                      legendgroup='c', color='blue', opacity=0.20),
+            go.Mesh3d(x=grid[:, 0], y=grid[:, 1], z=torch.from_numpy(u).reshape(-1), name='Initial field',
+                      legendgroup='i', showlegend=True, color='rgb(139,224,164)',
+                      opacity=0.5),
         ])
+
+        if variance:
+            noise = []
+            for i in range(u.shape[0]):
+                noise.append(np.random.normal(0, variance * get_rms(u[i, :]), u.shape[1]))
+            noise = np.array(noise)
+            fig.add_trace(go.Mesh3d(x=grid[:, 0], y=grid[:, 1], z=torch.from_numpy(u + noise).reshape(-1),
+                                    name='Initial field + noise',
+                                    legendgroup='i_n', showlegend=True, color='rgb(139,224,80)',
+                                    opacity=0.5))
 
         fig.update_layout(scene_aspectmode='auto')
         fig.update_layout(showlegend=True,
                           scene=dict(
-                              xaxis_title='x1',
-                              yaxis_title='x2',
+                              xaxis_title='x1 - t',
+                              yaxis_title='x2 - x',
                               zaxis_title='u',
                               zaxis=dict(nticks=10, dtick=1),
                               aspectratio={"x": 1, "y": 1, "z": 1}

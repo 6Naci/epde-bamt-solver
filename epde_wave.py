@@ -1,3 +1,6 @@
+import math
+import random
+
 import numpy as np
 import pandas as pd
 import epde.interface.interface as epde_alg
@@ -5,43 +8,47 @@ import epde.interface.interface as epde_alg
 from epde.interface.prepared_tokens import Cache_stored_tokens
 
 from func import eq_collection as collection
+from func.confidence_region import get_rms
 
 
-def epde_equation(df, test_iter_limit, mesh_wave, title):
-    # df = pd.read_csv(f'data/{title}/wolfram_sln/wave_sln_{mesh_wave}.csv', header=None)
+def epde_equation(u, test_iter_limit, mesh_wave, title, variance):
 
     k = 0  # number of equations (final)
     dict_main = {}  # dict/table coeff the left part of the equation
     dict_right = {}
 
-    u = df.values
-    u = np.transpose(u)
-
     t = np.linspace(0, 1, u.shape[0])
     x = np.linspace(0, 1, u.shape[1])
 
-    boundary = 13
+    boundary = 10
     dimensionality = u.ndim
     grids = np.meshgrid(t, x, indexing='ij')
+
+    noise = []
+    for i in range(u.shape[0]):
+        noise.append(np.random.normal(0, variance * get_rms(u[i, :]), u.shape[1]))
+    noise = np.array(noise)
+
+    u_total = u + noise
 
     for test_idx in np.arange(test_iter_limit):
         epde_search_obj = epde_alg.epde_search(use_solver=False, eq_search_iter=100,
                                                dimensionality=dimensionality)
 
-        epde_search_obj.set_memory_properties(u, mem_for_cache_frac=10)
+        epde_search_obj.set_memory_properties(u_total, mem_for_cache_frac=10)
         epde_search_obj.set_moeadd_params(population_size=10, training_epochs=5)
 
         custom_grid_tokens = Cache_stored_tokens(token_type='grid',
                                                  boundary=boundary,
                                                  token_labels=['t', 'x'],
-                                                 token_tensors={'t': grids[0], 'x': grids[1]},
+                                                 token_tensors={'t': grids[0], 'xq': grids[1]},
                                                  params_ranges={'power': (1, 1)},
                                                  params_equality_ranges=None)
         '''
         Method epde_search.fit() is used to initiate the equation search.
         '''
 
-        epde_search_obj.fit(data=u, max_deriv_order=(2, 2), boundary=boundary,
+        epde_search_obj.fit(data=u_total, max_deriv_order=(2, 2), boundary=boundary,
                             equation_terms_max_number=3, equation_factors_max_number=1,
                             coordinate_tensors=grids, eq_sparsity_interval=(1e-8, 5.0),
                             deriv_method='poly', deriv_method_kwargs={'smooth': True, 'grid': grids},
@@ -81,6 +88,6 @@ def epde_equation(df, test_iter_limit, mesh_wave, title):
 
     # print(frame_main)
     # frame_main.to_excel("output_wave.xlsx")
-    # frame_main.to_csv(f'data/{title}/result/output_{mesh_wave}_main.csv', sep='\t', encoding='utf-8')
+    frame_main.to_csv(f'data/{title}/result/output_{mesh_wave}_main_var_{str(variance)}.csv', sep='\t', encoding='utf-8')
 
-    return frame_main, epde_search_obj
+    return frame_main
