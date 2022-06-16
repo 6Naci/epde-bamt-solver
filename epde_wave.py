@@ -41,7 +41,7 @@ def epde_equation(u, test_iter_limit, mesh_wave, title, variance):
         custom_grid_tokens = Cache_stored_tokens(token_type='grid',
                                                  boundary=boundary,
                                                  token_labels=['t', 'x'],
-                                                 token_tensors={'t': grids[0], 'xq': grids[1]},
+                                                 token_tensors={'t': grids[0], 'x': grids[1]},
                                                  params_ranges={'power': (1, 1)},
                                                  params_equality_ranges=None)
         '''
@@ -90,4 +90,4 @@ def epde_equation(u, test_iter_limit, mesh_wave, title, variance):
     # frame_main.to_excel("output_wave.xlsx")
     frame_main.to_csv(f'data/{title}/result/output_{mesh_wave}_main_var_{str(variance)}.csv', sep='\t', encoding='utf-8')
 
-    return frame_main
+    return frame_main, epde_search_obj

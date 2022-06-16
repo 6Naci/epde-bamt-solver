@@ -32,7 +32,7 @@ def bs_experiment(df, sample_k, mesh, title):
     bn.add_edges(discretized_data, scoring_function=('K2', K2Score), params=params)
     # print(bn.get_info())
 
-    bn.plot(f'{title}_{mesh}_plot.html')
+    # bn.plot(f'{title}_{mesh}_plot.html') # redefine
 
     # Parameters Learning and Sample
     bn.fit_parameters(df)
