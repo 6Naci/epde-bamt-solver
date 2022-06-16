@@ -6,12 +6,12 @@ import sys
 import time
 
 from TEDEouS import solver
-
+from TEDEouS.config import Config
 from func import transition_bs as transform
 
 from TEDEouS.input_preprocessing import grid_prepare, bnd_prepare, operator_prepare
 from TEDEouS.metrics import point_sort_shift_loss
-from TEDEouS.solver import point_sort_shift_solver
+from TEDEouS.solver import point_sort_shift_solver, grid_format_prepare
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 sys.path.append('../')
@@ -24,20 +24,21 @@ def solver_equation_matrix(grid_res, CACHE, equation, equation_main, title):
     x_grid = np.linspace(0, 1, grid_res + 1)
     t_grid = np.linspace(0, 1, grid_res + 1)
 
-    x = torch.from_numpy(x_grid)
-    t = torch.from_numpy(t_grid)
-
+    # x = torch.from_numpy(x_grid)
+    # t = torch.from_numpy(t_grid)
+    #
     # grid = []
     # grid.append(x)
     # grid.append(t)
     #
     # grid = np.meshgrid(*grid)
     # grid = torch.tensor(grid, device=device)
+    # grid = solver.grid_format_prepare(coord_list, mode='NN')
+    # grid.to(device)
 
-    coord_list = [x, t]
+    coord_list = [x_grid, t_grid]
 
-    grid = solver.grid_format_prepare(coord_list, mode='NN')
-    grid.to(device)
+    grid = grid_format_prepare(coord_list, mode='mat')
 
     sln = np.genfromtxt(f'data/{title}/wolfram_sln/wave_sln_{grid_res}.csv', delimiter=',')
     sln_torch = torch.from_numpy(sln)
@@ -60,15 +61,22 @@ def solver_equation_matrix(grid_res, CACHE, equation, equation_main, title):
 
     start = time.time()
 
-    matrix_model = solver.matrix_optimizer(grid, None, equation.solver_form(), equation.boundary_conditions(),
-                                           lambda_bound=10,
-                                           verbose=True, learning_rate=1e-3, eps=1e-5, tmin=1000, tmax=1e6,
-                                           use_cache=CACHE, cache_dir='../cache/', cache_verbose=True,
-                                           batch_size=None, save_always=True, lp_par=lp_par, print_every=None,
-                                           patience=5, loss_oscillation_window=100,
-                                           no_improvement_patience=1000,
-                                           model_randomize_parameter=1e-6, optimizer='Adam',
-                                           cache_model=model_arch)
+    config = Config()
+
+    config.set_parameter('Cache.save_always', True)
+    config.set_parameter('Cache.use_cache', True)
+
+    matrix_model = solver.optimization_solver(coord_list, model_arch, equation.solver_form(), equation.boundary_conditions(), config, mode='mat')
+
+    # matrix_model = solver.matrix_optimizer(grid, None, equation.solver_form(), equation.boundary_conditions(),
+    #                                        lambda_bound=10,
+    #                                        verbose=True, learning_rate=1e-3, eps=1e-5, tmin=1000, tmax=1e6,
+    #                                        use_cache=CACHE, cache_dir='../cache/', cache_verbose=True,
+    #                                        batch_size=None, save_always=True, lp_par=lp_par, print_every=None,
+    #                                        patience=5, loss_oscillation_window=100,
+    #                                        no_improvement_patience=1000,
+    #                                        model_randomize_parameter=1e-6, optimizer='Adam',
+    #                                        cache_model=model_arch)
 
     end = time.time()
 

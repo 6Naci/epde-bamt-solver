@@ -4,7 +4,7 @@ import torch
 import scipy.io
 
 
-def wave_equation(grid_res, title='wave_equation'):
+def  wave_equation(grid_res, title='wave_equation'):
     """
         Load data
         Synthetic data from wolfram:

@@ -28,7 +28,7 @@ if __name__ == '__main__':
 
     u, grid_u = tasks[title](grid_res)
 
-    test_iter_limit = 3  # how many times to launch algorithm (one time - 2-3 equations)
+    test_iter_limit = 1  # how many times to launch algorithm (one time - 2-3 equations)
     noise = False
     variance_arr = [0.001] if noise else [0]
 
@@ -58,9 +58,7 @@ if __name__ == '__main__':
         for equation in equations:
             text_form = view_for_create_eq(equation)
             eq = translate_equation(text_form, epde_search_obj.pool)
-
             equation_main = transform.solver_view(equation)
-            # eq = translate_equation(text_form, pool)
             solver_inp.append((eq.solver_form(), eq.boundary_conditions()))
             u, prepared_grid, exp_dict_list = solver_eq.solver_equation_matrix(grid_res, CACHE, eq, equation_main, title)
             u = u.reshape(-1, grid_res + 1)
