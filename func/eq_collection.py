@@ -34,11 +34,11 @@ def eq_table(res, dict_main, dict_right, k):
         dict_main, dict_right, k
     """
 
-    for soEq in res:  # soEq - объект класса 'epde.structure.SoEq'
-        for equation in soEq:  # equation - объект класса 'epde.structure.Equation'
-            equation_s = equation.structure[0].structure  # Список объектов класса 'epde.structure.Term'
-            equation_c = equation.structure[0].weights_final  # Коэффициенты правой части
-            text_form_eq = regex.sub('', equation.structure[0].text_form)  # Полная запись ур-ния
+    for soEq in res:  # soEq - an object of the class 'epde.structure.SoEq'
+        for equation in soEq:  # equation - an object of the class 'epde.structure.Equation'
+            equation_s = equation.structure[0].structure  # list of class objects 'epde.structure.Term'
+            equation_c = equation.structure[0].weights_final  # coefficients of the right part
+            text_form_eq = regex.sub('', equation.structure[0].text_form)  # full equation line
             # equation.structure[0].solver_form() - тензорное представление ур-ния
             # epde.factor.Factor (deriv_code[0] - производная токена, equality_ranges - степень/размерность параметра,
             #                                     cache_label - название токена)
