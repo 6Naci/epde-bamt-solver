@@ -16,7 +16,7 @@ def dev_variable(term, unknown_var, max_order):  # for variable definition and w
     return [None]
 
 
-def solver_view(equation):
+def solver_view(equation, cfg):
     """
         Transition from the type of BAMT output data to the type required by SOLVER.
 
@@ -25,6 +25,8 @@ def solver_view(equation):
         equation : dict
             equation in form {'u{power: 1.0} * d^2u/dx1^2{power: 1.0}': 0.02036869782557119,
             'u{power: 1.0}': -0.6043591746687335, 'C': 0.9219325066472699, 'd^2u/dx2^2{power: 1.0}_r': '-1'}.
+
+        cfg : class Config from TEDEouS/config.py contains the initial configuration of the task
 
         Returns
         -------
@@ -57,8 +59,8 @@ def solver_view(equation):
     """
 
     # initial params before fit-EPDE (global params)
-    dimensionality = 2
-    max_deriv_order = 2
+    dimensionality = len(cfg.params["Cache_stored_tokens"]["token_labels"])
+    max_deriv_order = max(cfg.params["fit"]["max_deriv_order"])
 
     equation_main = {}
     unknown_variables = {}  # x1, x2, ..., xn
