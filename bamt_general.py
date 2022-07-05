@@ -1,9 +1,7 @@
 import os
-
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-
 import bamt.Networks as Nets
 import bamt.Nodes as Nodes
 import bamt.Preprocessors as pp
@@ -12,8 +10,26 @@ import dill as pickle
 from sklearn import preprocessing
 
 
-def bs_experiment(df, config_bamt, title):
+def get_equations(synth_data, df_res, config_bamt):
+    equations = []
+    for i in range(len(synth_data)):
+        equation = {}
+        for col in df_res.columns:
+            equation[synth_data[col].name] = synth_data[col].values[i]
+        equations.append(equation)
 
+    equations_result = []
+    for i in range(len(synth_data)):
+        equation_res = {}
+        for key, value in equations[i].items():
+            if abs(float(value)) > config_bamt.params["glob_bamt"]["lambda"]:
+                equation_res[key] = value
+        equations_result.append(equation_res)
+        print(f'{i + 1}.{equation_res}')
+    return equations_result
+
+
+def bs_experiment(df, config_bamt, title):
     # Deleting rows with condition
     df = df.loc[(df.sum(axis=1) != -1), (df.sum(axis=0) != 0)]
     # Deleting null columns
@@ -41,23 +57,37 @@ def bs_experiment(df, config_bamt, title):
 
     # Sample() function
     df_res = df
-
-    equations = []
     synth_data = bn.sample(config_bamt.params["glob_bamt"]["sample_k"], as_df=True)
-    for i in range(len(synth_data)):
-        equation = {}
-        for col in df_res.columns:
-            equation[synth_data[col].name] = synth_data[col].values[i]
-        equations.append(equation)
+    equations_main = get_equations(synth_data, df_res, config_bamt)
 
-    equations_result = []
-    for i in range(len(synth_data)):
-        equation_res = {}
-        for key, value in equations[i].items():
-            if abs(float(value)) > config_bamt.params["glob_bamt"]["lambda"]:
-                equation_res[key] = value
-        equations_result.append(equation_res)
-        print(f'{i + 1}.{equation_res}')
+    # display distribution of coefficients for structures
+    synth_data_r = bn.sample(1000, as_df=True)
+    equations_r = get_equations(synth_data_r, df_res, config_bamt)
+    d_main, k = {}, 0
+
+    for i in range(len(equations_r)):
+        for temp, coeff in equations_r[i].items():
+            if temp in d_main:
+                d_main[temp] += [0 for i in range(k - len(d_main[temp]))] + [coeff]
+            else:
+                d_main[temp] = [0 for i in range(k)] + [coeff]
+
+        k += 1
+
+    for key, value in d_main.items():
+        if len(value) < k:
+            d_main[key] = d_main[key] + [0 for i in range(k - len(d_main[key]))]
+
+    d = pd.DataFrame(d_main)
+    for col in d.columns:
+        d = d.astype({col: np.float64})
+
+    d.hist(column=d.columns[:], figsize=(20, 15), bins=100, rwidth=0.6)
+    plt.suptitle("Distribution of coefficients for structures (with 0)")
+
+    df_Nan = d.replace(0, np.NaN)
+    df_Nan.hist(column=d.columns[:], figsize=(20, 15), bins=100, rwidth=0.6)
+    plt.suptitle("Distribution of coefficients for structures (without 0)")
 
     # save result
     if not (os.path.exists(f'data/{title}/bamt_result')):
@@ -67,13 +97,13 @@ def bs_experiment(df, config_bamt, title):
 
     if os.path.exists(f'data/{title}/bamt_result/data_equations_{config_bamt.params["glob_bamt"]["sample_k"]}.csv'):
         with open(f'data/{title}/bamt_result/data_equations_{config_bamt.params["glob_bamt"]["sample_k"]}_{number_of_files}.pickle', 'wb') as f:
-            pickle.dump(equations_result, f, pickle.HIGHEST_PROTOCOL)
+            pickle.dump(equations_main, f, pickle.HIGHEST_PROTOCOL)
     else:
         with open(f'data/{title}/bamt_result/data_equations_{config_bamt.params["glob_bamt"]["sample_k"]}.pickle', 'wb') as f:
-            pickle.dump(equations_result, f, pickle.HIGHEST_PROTOCOL)
+            pickle.dump(equations_main, f, pickle.HIGHEST_PROTOCOL)
 
     # # Load data
     # with open(f'data/{title}/bamt_result/data_equations_{config_bamt.params["glob_bamt"]["sample_k"]}.pickle', 'rb') as f:
     #     equations_result = pickle.load(f)
 
-    return equations_result
+    return equations_main

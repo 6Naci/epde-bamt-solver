@@ -77,7 +77,7 @@ def solver_equations(config_solver, params, b_conds, equations, epde_obj=False, 
         torch.save(grid_main, f'data/{title}/solver_result/file_prepared_grid_main_{list(grid_main.size())}_{config_solver.params["glob_solver"]["mode"]}.pt')
 
     # # Load data
-    # u_main = torch.load(f'data/{title}/solver_result/file_u_main_{config_solver.params["glob_bamt"]["sample_k"]}_{config_solver.params["glob_solver"]["mode"]}.pt')
-    # grid_main = torch.load(f'data/{title}/solver_result/file_prepared_grid_main_{config_solver.params["glob_bamt"]["sample_k"]}_{config_solver.params["glob_solver"]["mode"]}.pt')
+    # u_main = torch.load(f'data/{title}/solver_result/file_u_main_{list(u_main.shape)}_{cfg.params["glob_solver"]["mode"]}.pt')
+    # grid_main = torch.load(f'data/{title}/solver_result/file_prepared_grid_main_{list(grid_main.size())}_{cfg.params["glob_solver"]["mode"]}.pt')
 
     return u_main, grid_main

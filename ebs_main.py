@@ -12,7 +12,8 @@ if __name__ == '__main__':
 
     tasks = {
         'wave_equation': load_data.wave_equation,
-        'burgers_equation': load_data.burgers_equation
+        'burgers_equation': load_data.burgers_equation,
+        'KdV_equation': load_data.KdV_equation
     }
 
     title = list(tasks.keys())[0]  # name of the problem/equation

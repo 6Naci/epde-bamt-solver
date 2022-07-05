@@ -15,6 +15,12 @@ from func.confidence_region import get_rms
 def equation_fit(data, grid, config_epde):
     dimensionality = data.ndim
 
+    deriv_method_kwargs = {}
+    if config_epde.params["fit"]["deriv_method"] == "poly":
+        deriv_method_kwargs = {'smooth': config_epde.params["fit"]["deriv_method_kwargs"]["smooth"], 'grid': grid}
+    elif config_epde.params["fit"]["deriv_method"] == "ANN":
+        deriv_method_kwargs = {'epochs_max': config_epde.params["fit"]["deriv_method_kwargs"]["epochs_max"]}
+
     epde_search_obj = epde_alg.epde_search(use_solver=config_epde.params["epde_search"]["use_solver"],
                                            eq_search_iter=config_epde.params["epde_search"]["eq_search_iter"],
                                            dimensionality=dimensionality)
@@ -41,7 +47,7 @@ def equation_fit(data, grid, config_epde):
                         equation_factors_max_number=config_epde.params["fit"]["equation_factors_max_number"],
                         coordinate_tensors=grid, eq_sparsity_interval=config_epde.params["fit"]["eq_sparsity_interval"],
                         deriv_method=config_epde.params["fit"]["deriv_method"],
-                        deriv_method_kwargs={'smooth': True, 'grid': grid},
+                        deriv_method_kwargs=deriv_method_kwargs,
                         additional_tokens=[custom_grid_tokens, ],
                         memory_for_cache=config_epde.params["fit"]["memory_for_cache"],
                         prune_domain=config_epde.params["fit"]["prune_domain"])
@@ -61,7 +67,6 @@ def equation_fit(data, grid, config_epde):
 
 
 def epde_equations(u, grid_u, cfg, variance, title):
-
     k = 0  # number of equations (final)
     dict_main, dict_right = {}, {}  # dict/table coeff the left/right part of the equation
     epde_obj = False
@@ -74,7 +79,6 @@ def epde_equations(u, grid_u, cfg, variance, title):
     u_total = u + noise
 
     for test_idx in np.arange(cfg.params["glob_epde"]["test_iter_limit"]):
-
         epde_obj = equation_fit(u_total, grid_u, cfg)
         res = epde_obj.equation_search_results(only_print=False, level_num=2) # result search
 
