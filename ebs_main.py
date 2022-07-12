@@ -18,11 +18,11 @@ if __name__ == '__main__':
 
     title = list(tasks.keys())[0]  # name of the problem/equation
 
-    u, grid_u, cfg, params, b_conds = tasks[title]()
+    u, grid_u, derivatives, cfg, params, b_conds = tasks[title]()
 
     for variance in cfg.params["glob_epde"]["variance_arr"]:
 
-        df_main, epde_search_obj = epde_equations(u, grid_u, cfg, variance, title)
+        df_main, epde_search_obj = epde_equations(u, grid_u, derivatives, cfg, variance, title)
 
         equations = bs_experiment(df_main, cfg, title)
 

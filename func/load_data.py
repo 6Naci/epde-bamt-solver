@@ -30,6 +30,7 @@ DEFAULT_CONFIG_EBS = """
 "equation_terms_max_number": 3,
 "equation_factors_max_number": 1,
 "eq_sparsity_interval": [1e-8, 5.0],
+"derivs": null,
 "deriv_method": "poly",
 "deriv_method_kwargs": {"smooth": true},
 "memory_for_cache": 25,
@@ -49,7 +50,7 @@ DEFAULT_CONFIG_EBS = """
 "load_equations": false
 },
 "params": {
-"init_nodes": ["d^2u/dx2^2{power: 1.0}"]
+"init_nodes": false
 },
 "glob_solver": {
 "mode": "NN"
@@ -110,6 +111,8 @@ def wave_equation():
     df = pd.read_csv(f'{path}wolfram_sln/wave_sln_{mesh}.csv', header=None)
     data = df.values
     data = np.transpose(data)  # x1 - t (axis Y), x2 - x (axis X)
+
+    derives = None
 
     t = np.linspace(0, 1, mesh + 1)
     x = np.linspace(0, 1, mesh + 1)
@@ -249,7 +252,7 @@ def wave_equation():
 
     cfg_ebs = config.Config(f'{path}ebs_config.json')
 
-    return data, grid, cfg_ebs, param, bconds
+    return data, grid, derives, cfg_ebs, param, bconds
 
 
 def burgers_equation():
@@ -263,8 +266,21 @@ def burgers_equation():
 
     data = mat['u']
     data = np.transpose(data)
-    t = mat['t']
-    x = mat['x']
+    t = mat['t'][0]
+    x = mat['x'][0]
+
+    dx = pd.read_csv(f'{path}wolfram_sln/burgers_sln_dx_256.csv', header=None)
+    d_x = dx.values
+    d_x = np.transpose(d_x)
+
+    dt = pd.read_csv(f'{path}wolfram_sln/burgers_sln_dt_256.csv', header=None)
+    d_t = dt.values
+    d_t = np.transpose(d_t)
+
+    derives = np.zeros(shape=(data.shape[0], data.shape[1], 2))
+    derives[:, :, 0] = d_t
+    derives[:, :, 1] = d_x
+
     # Create mesh
     grid = np.meshgrid(t, x, indexing='ij')
 
@@ -297,12 +313,14 @@ def burgers_equation():
         },
         "fit": {
             "max_deriv_order": (1, 1),
-            "boundary": 20,  #
+            "boundary": 100,  #
             "equation_terms_max_number": 3,  #
             "equation_factors_max_number": 2,
             "eq_sparsity_interval": (1e-8, 5.0),  #
-            "deriv_method": "poly",
-            "deriv_method_kwargs": {'smooth': True},
+            "deriv_method": "ANN",  #
+            "deriv_method_kwargs": {"epochs_max": 1000},  #
+            # "deriv_method": "poly",
+            # "deriv_method_kwargs": {'smooth': True},
             "memory_for_cache": 25,
             "prune_domain": False
         },
@@ -321,9 +339,6 @@ def burgers_equation():
             "plot": False,
             "save_equations": True,
             "load_equations": False
-        },
-        "params": {
-            "init_nodes": ['d^2u/dx2^2{power: 1.0}']
         }
     }
 
@@ -344,7 +359,7 @@ def burgers_equation():
 
     cfg_ebs = config.Config(f'{path}ebs_config.json')
 
-    return data, grid, cfg_ebs, param, bconds
+    return data, grid, derives, cfg_ebs, param, bconds
 
 
 def KdV_equation():

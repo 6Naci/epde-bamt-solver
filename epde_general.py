@@ -12,7 +12,7 @@ from func import eq_collection as collection
 from func.confidence_region import get_rms
 
 
-def equation_fit(data, grid, config_epde):
+def equation_fit(data, grid, derives, config_epde):
     dimensionality = data.ndim
 
     deriv_method_kwargs = {}
@@ -46,6 +46,7 @@ def equation_fit(data, grid, config_epde):
                         equation_terms_max_number=config_epde.params["fit"]["equation_terms_max_number"],
                         equation_factors_max_number=config_epde.params["fit"]["equation_factors_max_number"],
                         coordinate_tensors=grid, eq_sparsity_interval=config_epde.params["fit"]["eq_sparsity_interval"],
+                        derivs=[derives] if derives is not None else None,
                         deriv_method=config_epde.params["fit"]["deriv_method"],
                         deriv_method_kwargs=deriv_method_kwargs,
                         additional_tokens=[custom_grid_tokens, ],
@@ -66,7 +67,7 @@ def equation_fit(data, grid, config_epde):
     return epde_search_obj
 
 
-def epde_equations(u, grid_u, cfg, variance, title):
+def epde_equations(u, grid_u, derives, cfg, variance, title):
     k = 0  # number of equations (final)
     dict_main, dict_right = {}, {}  # dict/table coeff the left/right part of the equation
     epde_obj = False
@@ -79,7 +80,7 @@ def epde_equations(u, grid_u, cfg, variance, title):
     u_total = u + noise
 
     for test_idx in np.arange(cfg.params["glob_epde"]["test_iter_limit"]):
-        epde_obj = equation_fit(u_total, grid_u, cfg)
+        epde_obj = equation_fit(u_total, grid_u, derives, cfg)
         res = epde_obj.equation_search_results(only_print=False, level_num=2) # result search
 
         dict_main, dict_right, k = collection.eq_table(res, dict_main, dict_right, k)

@@ -124,4 +124,7 @@ def view_for_create_eq(equation):
                 form_c += str(value)
         else:
             form_right += ' = ' + key
-    return form_left + form_c + form_right[:-2]
+
+    if 'C' not in equation.keys():
+        form_left = form_left[:-3] # removing the plus
+    return form_left + form_c + form_right[:-2] # removing the '_r'

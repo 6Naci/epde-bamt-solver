@@ -1,19 +1,27 @@
 import re
 import numpy as np
+import itertools
 
 regex = re.compile('freq:\s\d\S\d+')  # Using regular expression for frequency delete (sin/cos)
 
 
-def dict_update(d_main, temp, coeff, k):
-    arr_temp = temp.split(' * ')
-    temp2 = f'{arr_temp[1]} * {arr_temp[0]}' if len(arr_temp) == 2 else ""
+def dict_update(d_main, term, coeff, k):
 
-    if temp in d_main:
-        d_main[temp] += [0 for i in range(k - len(d_main[temp]))] + [coeff]
-    elif temp2 in d_main:  # case: if structure recorded b * a provided, that a * b already exists
-        d_main[temp2] += [0 for i in range(k - len(d_main[temp2]))] + [coeff]
-    else:
-        d_main[temp] = [0 for i in range(k)] + [coeff]
+    str_t = '_r' if '_r' in term else ''
+    arr_term = re.sub('_r', '', term).split(' * ')
+
+    # if structure recorded b * a provided, that a * b already exists (for all case - generalization)
+    perm_set = list(itertools.permutations([i for i in range(len(arr_term))]))
+    structure_added = False
+
+    for p_i in perm_set:
+        temp = " * ".join([arr_term[i] for i in p_i]) + str_t
+        if temp in d_main:
+            d_main[temp] += [0 for i in range(k - len(d_main[temp]))] + [coeff]
+            structure_added = True
+
+    if not structure_added:
+        d_main[term] = [0 for i in range(k)] + [coeff]
 
     return d_main
 
