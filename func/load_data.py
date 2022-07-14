@@ -4,9 +4,25 @@ import torch
 import scipy.io
 import json
 from TEDEouS import config
+# import config
 
-DEFAULT_CONFIG_EBS = """
+
+DEFAULT_CONFIG_EBS = '''
 {
+"SR3": {
+"threshold": 7,
+"max_iter": 1000,
+"tol": 1e-15,
+"nu": 1e2,
+"thresholder": "l0",
+"normalize_columns": true
+},
+"PDELibrary": {
+"derivative_order": 3,
+"include_bias": true,
+"is_uniform": true,
+"include_interaction":true
+},
 "epde_search": {
 "use_solver": false,
 "eq_search_iter": 100
@@ -90,7 +106,7 @@ DEFAULT_CONFIG_EBS = """
 "cache_model":null
 }
 }
-"""
+'''
 config.default_config = json.loads(DEFAULT_CONFIG_EBS)
 
 
@@ -245,7 +261,24 @@ def wave_equation():
         }
     }
 
-    ebs_config = {**epde_config, **bamt_config, **solver_config}
+    sindy_config = {
+        "PDELibrary": {
+            "derivative_order": 3,
+            "include_bias": True,
+            "is_uniform": True,
+            "include_interaction": True
+        },
+        "SR3": {
+            "threshold": 7,
+            "max_iter": 1000,
+            "tol": 1e-15,
+            "nu": 1e2,
+            "thresholder": 'l0',
+            "normalize_columns": True
+        }
+    }
+
+    ebs_config = {**epde_config, **bamt_config, **solver_config, **sindy_config}
 
     with open(f'{path}ebs_config.json', 'w') as fp:
         json.dump(ebs_config, fp)
@@ -291,8 +324,6 @@ def burgers_equation():
     noise = False
     variance_arr = [0.001] if noise else [0]
 
-    """YOUR CODE HERE"""
-
     epde_config = {
         "epde_search": {
             "use_solver": False,
@@ -317,10 +348,10 @@ def burgers_equation():
             "equation_terms_max_number": 3,  #
             "equation_factors_max_number": 2,
             "eq_sparsity_interval": (1e-8, 5.0),  #
-            "deriv_method": "ANN",  #
-            "deriv_method_kwargs": {"epochs_max": 1000},  #
-            # "deriv_method": "poly",
-            # "deriv_method_kwargs": {'smooth': True},
+            # "deriv_method": "ANN",  #
+            # "deriv_method_kwargs": {"epochs_max": 1000},  #
+            "deriv_method": "poly",
+            "deriv_method_kwargs": {'smooth': True},
             "memory_for_cache": 25,
             "prune_domain": False
         },
@@ -352,7 +383,24 @@ def burgers_equation():
         }
     }
 
-    ebs_config = {**epde_config, **bamt_config, **solver_config}
+    sindy_config = {
+        "PDELibrary": {
+            "derivative_order": 3,
+            "include_bias": True,
+            "is_uniform": True,
+            "include_interaction": True
+        },
+        "SR3": {
+            "threshold": 7,
+            "max_iter": 1000,
+            "tol": 1e-15,
+            "nu": 1e2,
+            "thresholder": 'l0',
+            "normalize_columns": True
+        }
+    }
+
+    ebs_config = {**epde_config, **bamt_config, **solver_config, **sindy_config}
 
     with open(f'{path}ebs_config.json', 'w') as fp:
         json.dump(ebs_config, fp)
@@ -598,7 +646,24 @@ def KdV_equation():
         }
     }
 
-    ebs_config = {**epde_config, **bamt_config, **solver_config}
+    sindy_config = {
+        "PDELibrary": {
+            "derivative_order": 3,
+            "include_bias": True,
+            "is_uniform": True,
+            "include_interaction": True
+        },
+        "SR3": {
+            "threshold": 7,
+            "max_iter": 1000,
+            "tol": 1e-15,
+            "nu": 1e2,
+            "thresholder": 'l0',
+            "normalize_columns": True
+        }
+    }
+
+    ebs_config = {**epde_config, **bamt_config, **solver_config, **sindy_config}
 
     with open(f'{path}ebs_config.json', 'w') as fp:
         json.dump(ebs_config, fp)
