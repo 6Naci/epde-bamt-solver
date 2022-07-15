@@ -8,7 +8,22 @@ import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 
 
-def equation_fit(data, grid, config_sindy):
+def set_optimizer(type, config_sindy):
+    if type == 'SR3':
+        return ps.SR3(threshold=config_sindy.params["SR3"]["threshold"],
+                      max_iter=config_sindy.params["SR3"]["max_iter"],
+                      tol=config_sindy.params["SR3"]["tol"],
+                      nu=config_sindy.params["SR3"]["nu"],
+                      thresholder=config_sindy.params["SR3"]["thresholder"],
+                      normalize_columns=config_sindy.params["SR3"]["normalize_columns"])
+
+    elif type == "STLSQ":
+        return ps.STLSQ(threshold=["STLSQ"]["threshold"],
+                             alpha=["STLSQ"]["alpha"],
+                             normalize_columns=["STLSQ"]["normalize_columns"])
+
+
+def equation_fit(sindy_func, data, grid, config_sindy):
     t = grid[0][:, 0]
     x = grid[1][0, :]
     dt = t[1] - t[0]
@@ -16,15 +31,11 @@ def equation_fit(data, grid, config_sindy):
     data = np.transpose(data)
     data = data.reshape(len(x), len(t), 1)
 
-    library_functions = [lambda x: x, lambda x: x * x]  # , lambda x: np.cos(x)*np.cos(x)]#, lambda x: 1/x]
-    library_function_names = [lambda x: x,
-                              lambda x: x + x]  # , lambda x: 'cos(' +x+ ')'+'sin(' +x+ ')']#, lambda x: '1/'+x]
-
     # ? проблема с использованием multiindices
     # multiindices=np.array([[0,1],[1,1],[2,0],[3,0]])
 
-    pde_lib = ps.PDELibrary(library_functions=library_functions,
-                            function_names=library_function_names,
+    pde_lib = ps.PDELibrary(library_functions=sindy_func[0],
+                            function_names=sindy_func[1],
                             derivative_order=config_sindy.params["PDELibrary"]["derivative_order"],
                             spatial_grid=x,
                             # multiindices=multiindices,
@@ -36,25 +47,16 @@ def equation_fit(data, grid, config_sindy):
 
     # feature_library = ps.feature_library.PolynomialLibrary(degree=3)
 
-    optimizer = ps.SR3(threshold=config_sindy.params["SR3"]["threshold"],
-                       max_iter=config_sindy.params["SR3"]["max_iter"],
-                       tol=config_sindy.params["SR3"]["tol"],
-                       nu=config_sindy.params["SR3"]["nu"],
-                       thresholder=config_sindy.params["SR3"]["thresholder"],
-                       normalize_columns=config_sindy.params["SR3"]["normalize_columns"])
+    optimizer = set_optimizer(type=config_sindy.params["set_optimizer"]["type"],
+                              config_sindy=config_sindy)
 
     model = ps.SINDy(feature_library=pde_lib, optimizer=optimizer)
     model.fit(data, t=dt)
 
-    # второй оптимизатор
-    # optimizer = ps.STLSQ(threshold=5, alpha=1e-5, normalize_columns=True)
-    # model = ps.SINDy(feature_library=pde_lib, optimizer=optimizer)
-    # model.fit(u, t=dt)
-
     return model
 
 
-def sindy_equations(u, grid, cfg, variance, title):
+def sindy_equations(sindy_func, u, grid, cfg, variance, title):
 
     k = 0  # number of equations (final)
     dict_main, dict_right = {}, {}  # dict/table coeff the left/right part of the equation
@@ -63,7 +65,7 @@ def sindy_equations(u, grid, cfg, variance, title):
 
     test_iter_limit = 1
     for test_idx in np.arange(test_iter_limit):
-        model = equation_fit(u, grid, cfg)
+        model = equation_fit(sindy_func, u, grid, cfg)
         dict_main, dict_right, k = collection.eq_table_sindy(model, dict_main, dict_right, k)
         print(test_idx)
 

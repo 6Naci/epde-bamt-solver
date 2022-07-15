@@ -19,9 +19,9 @@ if __name__ == '__main__':
 
     title = list(tasks.keys())[1]  # name of the problem/equation
 
-    u, grid_u, derivs, cfg, params, b_conds = tasks[title]()
+    sindy_func, u, grid_u, derivs, cfg, params, b_conds = tasks[title]()
 
-    df_main, model = sindy_equations(u, grid_u, cfg, 1, 'sindy_test')
+    df_main, model = sindy_equations(sindy_func, u, grid_u, cfg, 1, 'sindy_test')
     print()
     # df_main, epde_search_obj = epde_equations(u, grid_u, derives=None, cfg=cfg, variance=variance, title=title)
     # for variance in cfg.params["glob_epde"]["variance_arr"]:

@@ -9,6 +9,14 @@ from TEDEouS import config
 
 DEFAULT_CONFIG_EBS = '''
 {
+"set_optimizer": {
+"type": "SR3"
+},
+"STLSQ": {
+"threshold": 5,
+"alpha": 1e-5,
+"normalize_columns": true
+},
 "SR3": {
 "threshold": 7,
 "max_iter": 1000,
@@ -108,6 +116,14 @@ DEFAULT_CONFIG_EBS = '''
 }
 '''
 config.default_config = json.loads(DEFAULT_CONFIG_EBS)
+
+'''     примеры написания лямбда-функций:
+    sindy_library_func = [lambda x: np.cos(x)*np.cos(x), lambda x: 1/x]
+    sindy_library_func_names = [lambda x: 'cos(' +x+ ')'+'sin(' +x+ ')', lambda x: '1/'+x]'''
+
+sindy_library_func = [lambda x: x, lambda x: x * x]
+sindy_library_func_names = [lambda x: x, lambda x: x + x]
+sindy_func = [sindy_library_func, sindy_library_func_names]
 
 
 def wave_equation():
@@ -268,6 +284,14 @@ def wave_equation():
             "is_uniform": True,
             "include_interaction": True
         },
+        "set_optimizer": {
+            "type": "SR3"
+        },
+        "STLSQ": {
+            "threshold": 5,
+            "alpha": 1e-5,
+            "normalize_columns": True
+        },
         "SR3": {
             "threshold": 7,
             "max_iter": 1000,
@@ -285,7 +309,7 @@ def wave_equation():
 
     cfg_ebs = config.Config(f'{path}ebs_config.json')
 
-    return data, grid, derives, cfg_ebs, param, bconds
+    return sindy_func, data, grid, derives, cfg_ebs, param, bconds
 
 
 def burgers_equation():
@@ -390,6 +414,14 @@ def burgers_equation():
             "is_uniform": True,
             "include_interaction": True
         },
+        "set_optimizer": {
+            "type": "SR3"
+        },
+        "STLSQ": {
+            "threshold": 5,
+            "alpha": 1e-5,
+            "normalize_columns": True
+        },
         "SR3": {
             "threshold": 7,
             "max_iter": 1000,
@@ -407,7 +439,7 @@ def burgers_equation():
 
     cfg_ebs = config.Config(f'{path}ebs_config.json')
 
-    return data, grid, derives, cfg_ebs, param, bconds
+    return sindy_func, data, grid, derives, cfg_ebs, param, bconds
 
 
 def KdV_equation():
@@ -653,6 +685,14 @@ def KdV_equation():
             "is_uniform": True,
             "include_interaction": True
         },
+        "set_optimizer": {
+            "type": "SR3"
+        },
+        "STLSQ": {
+            "threshold": 5,
+            "alpha": 1e-5,
+            "normalize_columns": True
+        },
         "SR3": {
             "threshold": 7,
             "max_iter": 1000,
@@ -679,4 +719,4 @@ def KdV_equation():
     cfg_ebs.set_parameter('Verbose.verbose', True)
     cfg_ebs.set_parameter('NN.h', 0.01)
 
-    return data, grid, cfg_ebs, param, bconds
+    return sindy_func, data, grid, cfg_ebs, param, bconds
