@@ -3,6 +3,7 @@ import os
 import numpy as np
 import pysindy as ps
 from func import eq_collection as collection
+from func.load_data import set_sindy_func
 # Ignore matplotlib deprecation warnings
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -23,7 +24,7 @@ def set_optimizer(type, config_sindy):
                              normalize_columns=["STLSQ"]["normalize_columns"])
 
 
-def equation_fit(sindy_func, data, grid, config_sindy):
+def equation_fit(data, grid, config_sindy):
     t = grid[0][:, 0]
     x = grid[1][0, :]
     dt = t[1] - t[0]
@@ -34,8 +35,8 @@ def equation_fit(sindy_func, data, grid, config_sindy):
     # ? проблема с использованием multiindices
     # multiindices=np.array([[0,1],[1,1],[2,0],[3,0]])
 
-    pde_lib = ps.PDELibrary(library_functions=sindy_func[0],
-                            function_names=sindy_func[1],
+    pde_lib = ps.PDELibrary(library_functions=set_sindy_func()[0],
+                            function_names=set_sindy_func()[1],
                             derivative_order=config_sindy.params["PDELibrary"]["derivative_order"],
                             spatial_grid=x,
                             # multiindices=multiindices,
@@ -56,16 +57,14 @@ def equation_fit(sindy_func, data, grid, config_sindy):
     return model
 
 
-def sindy_equations(sindy_func, u, grid, cfg, variance, title):
+def sindy_equations(u, grid, cfg, variance, title):
 
     k = 0  # number of equations (final)
     dict_main, dict_right = {}, {}  # dict/table coeff the left/right part of the equation
 
-    np.random.seed(100)
-
     test_iter_limit = 1
     for test_idx in np.arange(test_iter_limit):
-        model = equation_fit(sindy_func, u, grid, cfg)
+        model = equation_fit(u, grid, cfg)
         dict_main, dict_right, k = collection.eq_table_sindy(model, dict_main, dict_right, k)
         print(test_idx)
 

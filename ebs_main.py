@@ -19,14 +19,17 @@ if __name__ == '__main__':
 
     title = list(tasks.keys())[1]  # name of the problem/equation
 
-    sindy_func, u, grid_u, derivs, cfg, params, b_conds = tasks[title]()
+    u, grid_u, derivs, cfg, params, b_conds = tasks[title]()
 
-    df_main, model = sindy_equations(sindy_func, u, grid_u, cfg, 1, 'sindy_test')
-    print()
-    # df_main, epde_search_obj = epde_equations(u, grid_u, derives=None, cfg=cfg, variance=variance, title=title)
-    # for variance in cfg.params["glob_epde"]["variance_arr"]:
-    #
-    #     df_main, epde_search_obj = epde_equations(u, grid_u, derives=None, cfg=cfg, variance=variance, title=title)
-    #     equations = bs_experiment(df_main, cfg, title)
-    #     u_main, grid_main = solver_equations(cfg, params, b_conds, equations, epde_search_obj, title)
-    #     conf_plt.confidence_region_print(u, cfg, params, u_main, grid_main, variance)
+    for variance in cfg.params["glob_epde"]["variance_arr"]:
+        if cfg.params["discovery_module"]["name_module"] == "EPDE":
+            df_main, epde_search_obj = epde_equations(u, grid_u, derivs, cfg, variance, title)
+
+            equations = bs_experiment(df_main, cfg, title)
+
+            u_main, grid_main = solver_equations(cfg, params, b_conds, equations, epde_search_obj, title)
+
+            conf_plt.confidence_region_print(u, cfg, params, u_main, grid_main, variance)
+        else:
+            df_main, model = sindy_equations(u, grid_u, cfg, variance, title)
+            print(0)

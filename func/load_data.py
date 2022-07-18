@@ -4,126 +4,33 @@ import torch
 import scipy.io
 import json
 from TEDEouS import config
-# import config
+from default_configs import DEFAULT_CONFIG_EBS
 
-
-DEFAULT_CONFIG_EBS = '''
-{
-"set_optimizer": {
-"type": "SR3"
-},
-"STLSQ": {
-"threshold": 5,
-"alpha": 1e-5,
-"normalize_columns": true
-},
-"SR3": {
-"threshold": 7,
-"max_iter": 1000,
-"tol": 1e-15,
-"nu": 1e2,
-"thresholder": "l0",
-"normalize_columns": true
-},
-"PDELibrary": {
-"derivative_order": 3,
-"include_bias": true,
-"is_uniform": true,
-"include_interaction":true
-},
-"epde_search": {
-"use_solver": false,
-"eq_search_iter": 100
-},
-"set_memory_properties": {
-"mem_for_cache_frac": 10
-},
-"set_moeadd_params": {
-"population_size": 10,
-"training_epochs": 5
-},
-"Cache_stored_tokens": {
-"token_type": "grid",
-"token_labels": ["t", "x"],
-"params_ranges": {"power": [1, 1]},
-"params_equality_ranges": null
-},
-"fit": {
-"max_deriv_order": [2, 2],
-"boundary": 0,
-"equation_terms_max_number": 3,
-"equation_factors_max_number": 1,
-"eq_sparsity_interval": [1e-8, 5.0],
-"derivs": null,
-"deriv_method": "poly",
-"deriv_method_kwargs": {"smooth": true},
-"memory_for_cache": 25,
-"prune_domain": false
-},
-"glob_epde": {
-"test_iter_limit": 1,
-"variance_arr": [0],
-"save_result": true,
-"load_result": false
-},
-"glob_bamt": {
-"sample_k": 35,
-"lambda": 0.001,
-"plot": false,
-"save_equations": true,
-"load_equations": false
-},
-"params": {
-"init_nodes": false
-},
-"glob_solver": {
-"mode": "NN"
-},
-"Optimizer": {
-"learning_rate":1e-4,
-"lambda_bound":10,
-"optimizer":"Adam"
-},
-"Cache":{
-"use_cache":true,
-"cache_dir":"../cache/",
-"cache_verbose":false,
-"save_always":false,
-"model_randomize_parameter":0
-},
-"NN":{
-"batch_size":null,
-"lp_par":null,
-"grid_point_subset":["central"],
-"h":0.001
-},
-"Verbose":{
-"verbose":true,
-"print_every":null
-},
-"StopCriterion":{
-"eps":1e-5,
-"tmin":1000,
-"tmax":1e5 ,
-"patience":5,
-"loss_oscillation_window":100,
-"no_improvement_patience":1000   	
-},
-"Matrix":{
-"lp_par":null,
-"cache_model":null
-}
-}
-'''
 config.default_config = json.loads(DEFAULT_CONFIG_EBS)
 
-'''     примеры написания лямбда-функций:
-    sindy_library_func = [lambda x: np.cos(x)*np.cos(x), lambda x: 1/x]
-    sindy_library_func_names = [lambda x: 'cos(' +x+ ')'+'sin(' +x+ ')', lambda x: '1/'+x]'''
+global_modules = {
+        "discovery_module": {
+            "name_module": "SINDY"}  # "EPDE" or "SINDY"
+}
 
-sindy_library_func = [lambda x: x, lambda x: x * x]
-sindy_library_func_names = [lambda x: x, lambda x: x + x]
-sindy_func = [sindy_library_func, sindy_library_func_names]
+
+def set_sindy_func():
+    """
+    задаем множители, участвующие в слагаемых итогового уравнения (sindy);
+    ПРИМЕЧАНИЕ: аргументом лямбда-функций может быть только u (v)
+
+        library_functions: список математических выражений
+        library_functions_names: список строковых названий мат. выражений
+
+    примеры написания лямбда-функций:
+        library_functions = [lambda u: np.cos(u)*np.cos(u), lambda u: 1/u]
+        library_functions_names = [lambda u: f'cos({u})sin({u})', lambda u: f'1/{u}']
+    """
+
+    library_functions = [lambda u: u, lambda u: u * u]  # эквиваленты def f1(u): return u; def f2(u): return u*u
+    library_functions_names = [lambda u: u, lambda u: f'{u}{u}']  # принимают строковый тип ('u' или 'v')
+
+    return [library_functions, library_functions_names]
 
 
 def wave_equation():
@@ -302,14 +209,16 @@ def wave_equation():
         }
     }
 
-    ebs_config = {**epde_config, **bamt_config, **solver_config, **sindy_config}
+    config_modules = {**global_modules,
+                      **(epde_config if global_modules["discovery_module"]["name_module"] == "EPDE" else sindy_config),
+                      **bamt_config, **solver_config}
 
-    with open(f'{path}ebs_config.json', 'w') as fp:
-        json.dump(ebs_config, fp)
+    with open(f'{path}config_modules.json', 'w') as fp:
+        json.dump(config_modules, fp)
 
-    cfg_ebs = config.Config(f'{path}ebs_config.json')
+    cfg_ebs = config.Config(f'{path}config_modules.json')
 
-    return sindy_func, data, grid, derives, cfg_ebs, param, bconds
+    return data, grid, derives, cfg_ebs, param, bconds
 
 
 def burgers_equation():
@@ -432,14 +341,16 @@ def burgers_equation():
         }
     }
 
-    ebs_config = {**epde_config, **bamt_config, **solver_config, **sindy_config}
+    config_modules = {**global_modules,
+                      **(epde_config if global_modules["discovery_module"]["name_module"] == "EPDE" else sindy_config),
+                      **bamt_config, **solver_config}
 
-    with open(f'{path}ebs_config.json', 'w') as fp:
-        json.dump(ebs_config, fp)
+    with open(f'{path}config_modules.json', 'w') as fp:
+        json.dump(config_modules, fp)
 
-    cfg_ebs = config.Config(f'{path}ebs_config.json')
+    cfg_ebs = config.Config(f'{path}config_modules.json')
 
-    return sindy_func, data, grid, derives, cfg_ebs, param, bconds
+    return data, grid, derives, cfg_ebs, param, bconds
 
 
 def KdV_equation():
@@ -652,6 +563,11 @@ def KdV_equation():
             "variance_arr": variance_arr,
             "save_result": True,
             "load_result": False
+        },
+        "Optimizer": {
+            "learning_rate": 1e-4,
+            "lambda_bound": 100,
+            "optimizer": "Adam"
         }
     }
 
@@ -675,6 +591,17 @@ def KdV_equation():
         "Cache": {
             "use_cache": True,
             "save_always": True,
+            "model_randomize_parameter": 1e-5
+        },
+        "NN": {
+            "h": 0.01
+        },
+        "Verbose": {
+            "verbose": True
+        },
+        "StopCriterion": {
+            "eps": 1e-5,
+            "no_improvement_patience": None
         }
     }
 
@@ -703,20 +630,14 @@ def KdV_equation():
         }
     }
 
-    ebs_config = {**epde_config, **bamt_config, **solver_config, **sindy_config}
+    config_modules = {**global_modules,
+                      **(epde_config if global_modules["discovery_module"]["name_module"] == "EPDE" else sindy_config),
+                      **bamt_config,
+                      **solver_config}
 
-    with open(f'{path}ebs_config.json', 'w') as fp:
-        json.dump(ebs_config, fp)
+    with open(f'{path}config_modules.json', 'w') as fp:
+        json.dump(config_modules, fp)
 
-    cfg_ebs = config.Config(f'{path}ebs_config.json')
+    cfg_ebs = config.Config(f'{path}config_modules.json')
 
-    cfg_ebs.set_parameter('Optimizer.optimizer', 'Adam')
-    cfg_ebs.set_parameter('Optimizer.learning_rate', 1e-4)
-    cfg_ebs.set_parameter('Optimizer.lambda_bound', 100)
-    cfg_ebs.set_parameter('StopCriterion.eps', 1e-5)
-    cfg_ebs.set_parameter('StopCriterion.no_improvement_patience', None)
-    cfg_ebs.set_parameter('Cache.model_randomize_parameter', 1e-5)
-    cfg_ebs.set_parameter('Verbose.verbose', True)
-    cfg_ebs.set_parameter('NN.h', 0.01)
-
-    return sindy_func, data, grid, cfg_ebs, param, bconds
+    return data, grid, cfg_ebs, param, bconds

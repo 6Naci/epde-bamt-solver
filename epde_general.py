@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import epde.interface.interface as epde_alg
 
-from epde.interface.prepared_tokens import Cache_stored_tokens
+from epde.interface.prepared_tokens import CacheStoredTokens
 
 from func import eq_collection as collection
 from func.confidence_region import get_rms
@@ -30,7 +30,7 @@ def equation_fit(data, grid, derives, config_epde):
     epde_search_obj.set_moeadd_params(population_size=config_epde.params["set_moeadd_params"]["population_size"],
                                       training_epochs=config_epde.params["set_moeadd_params"]["training_epochs"])
 
-    custom_grid_tokens = Cache_stored_tokens(token_type=config_epde.params["Cache_stored_tokens"]["token_type"],
+    custom_grid_tokens = CacheStoredTokens(token_type=config_epde.params["Cache_stored_tokens"]["token_type"],
                                              boundary=config_epde.params["fit"]["boundary"],
                                              token_labels=config_epde.params["Cache_stored_tokens"]["token_labels"],
                                              token_tensors=dict(
