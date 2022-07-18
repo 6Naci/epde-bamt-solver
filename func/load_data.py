@@ -8,11 +8,6 @@ from default_configs import DEFAULT_CONFIG_EBS
 
 config.default_config = json.loads(DEFAULT_CONFIG_EBS)
 
-global_modules = {
-        "discovery_module": {
-            "name_module": "SINDY"}  # "EPDE" or "SINDY"
-}
-
 
 def set_sindy_func():
     """
@@ -31,6 +26,79 @@ def set_sindy_func():
     library_functions_names = [lambda u: u, lambda u: f'{u}{u}']  # принимают строковый тип ('u' или 'v')
 
     return [library_functions, library_functions_names]
+
+
+def example_equation():
+    """
+        path -> data -> parameters -> derivatives (optional) -> grid -> boundary conditions (optional) -> modules config (optional)
+    """
+    path = """YOUR CODE HERE"""
+    data = """YOUR CODE HERE"""
+
+    derives = None # if there are no derivatives
+
+    grid = """YOUR CODE HERE"""
+    param = """YOUR CODE HERE"""
+
+    bconds = False  # if there are no boundary conditions
+
+    """
+    Preparing boundary conditions (BC)
+
+    For every boundary we define three items
+
+    bnd=torch.Tensor of a boundary n-D points where n is the problem
+    dimensionality
+
+    bop=dict in form {'term1':term1,'term2':term2}-> term1+term2+...=0
+
+    NB! dictionary keys at the current time serve only for user-frienly 
+    description/comments and are not used in model directly thus order of
+    items must be preserved as (coeff,op,pow)
+
+    term is a dict term={coefficient:c1,[sterm1,sterm2],'pow': power}
+
+    Meaning c1*u*d2u/dx2 has the form
+
+    {'coefficient':c1,
+     'u*d2u/dx2': [[None],[0,0]],
+     'pow':[1,1]}
+
+    None is for function without derivatives
+
+    bval=torch.Tensor prescribed values at every point in the boundary
+    
+    bconds = [[bnd1, bop1, bndval1], [bnd2, bop2, bndval2], ...]
+    """
+
+    noise = False
+    variance_arr = ["""YOUR CODE HERE"""] if noise else [0]
+
+
+    global_modules = {
+        "discovery_module": {
+            "name_module": "EPDE"}  # "EPDE" or "SINDY"
+    }
+
+    epde_config = {"""YOUR CODE HERE"""}
+
+    bamt_config = {"""YOUR CODE HERE"""}
+
+    solver_config = {"""YOUR CODE HERE"""}
+
+    sindy_config = {"""YOUR CODE HERE"""}
+
+    config_modules = {**global_modules,
+                      **(epde_config if global_modules["discovery_module"]["name_module"] == "EPDE" else sindy_config),
+                      **bamt_config,
+                      **solver_config}
+
+    with open(f'{path}config_modules.json', 'w') as fp:
+        json.dump(config_modules, fp)
+
+    cfg_ebs = config.Config(f'{path}config_modules.json')
+
+    return data, grid, derives, cfg_ebs, param, bconds
 
 
 def wave_equation():
@@ -60,21 +128,6 @@ def wave_equation():
     param = [x, t]
 
     bconds = False  # if there are no boundary conditions
-    """
-    Preparing boundary conditions (BC)
-
-    bnd=torch.Tensor of a boundary n-D points where n is the problem dimensionality
-    
-    bop=dictionary in the form of 
-    'С * u{power: 1.0} * d^2u/dx1^2{power: 1.0}': 
-            {
-                'coeff': С ,
-                'vars_set': [[None], [0, 0]],
-                'power_set': [1.0, 1.0] 
-            },
-
-    bndval=torch.Tensor prescribed values at every point in the boundary
-    """
 
     x_c = torch.from_numpy(x)
     t_c = torch.from_numpy(t)
@@ -154,7 +207,7 @@ def wave_equation():
             "prune_domain": False
         },
         "glob_epde": {
-            "test_iter_limit": 1,  # how many times to launch algorithm (one time - 2-3 equations)
+            "test_iter_limit": 2,  # how many times to launch algorithm (one time - 2-3 equations)
             "variance_arr": variance_arr,
             "save_result": True,
             "load_result": False
@@ -184,34 +237,7 @@ def wave_equation():
         }
     }
 
-    sindy_config = {
-        "PDELibrary": {
-            "derivative_order": 3,
-            "include_bias": True,
-            "is_uniform": True,
-            "include_interaction": True
-        },
-        "set_optimizer": {
-            "type": "SR3"
-        },
-        "STLSQ": {
-            "threshold": 5,
-            "alpha": 1e-5,
-            "normalize_columns": True
-        },
-        "SR3": {
-            "threshold": 7,
-            "max_iter": 1000,
-            "tol": 1e-15,
-            "nu": 1e2,
-            "thresholder": 'l0',
-            "normalize_columns": True
-        }
-    }
-
-    config_modules = {**global_modules,
-                      **(epde_config if global_modules["discovery_module"]["name_module"] == "EPDE" else sindy_config),
-                      **bamt_config, **solver_config}
+    config_modules = {**epde_config, **bamt_config, **solver_config}
 
     with open(f'{path}config_modules.json', 'w') as fp:
         json.dump(config_modules, fp)
@@ -235,11 +261,11 @@ def burgers_equation():
     t = mat['t'][0]
     x = mat['x'][0]
 
-    dx = pd.read_csv(f'{path}wolfram_sln/burgers_sln_dx_256.csv', header=None)
+    dx = pd.read_csv(f'{path}wolfram_sln_derv/burgers_sln_dx_256.csv', header=None)
     d_x = dx.values
     d_x = np.transpose(d_x)
 
-    dt = pd.read_csv(f'{path}wolfram_sln/burgers_sln_dt_256.csv', header=None)
+    dt = pd.read_csv(f'{path}wolfram_sln_derv/burgers_sln_dt_256.csv', header=None)
     d_t = dt.values
     d_t = np.transpose(d_t)
 
@@ -253,9 +279,40 @@ def burgers_equation():
     param = [x, t]
 
     bconds = False  # if there are no boundary conditions
+    x_c = torch.from_numpy(x)
+    t_c = torch.from_numpy(t)
+
+    # Initial conditions at t=0
+    bnd1 = torch.cartesian_prod(x_c, torch.from_numpy(np.array([0], dtype=np.float64))).float()
+    bop1 = None
+    # u(x, 0) = Piecewise
+    bndval1 = torch.from_numpy(pd.read_csv(f'{path}boundary_conditions/burgers_bndval1.csv', header=None).values).reshape(-1)
+    # [bnd1, bndval1],
+
+    # Boundary conditions at x=-4000
+    bnd2 = torch.cartesian_prod(torch.from_numpy(np.array([-4000], dtype=np.float64)), t_c).float() # x_c[0]
+    bop2 = None
+    # u(-4000,t)=1000
+    bndval2 = torch.from_numpy(pd.read_csv(f'{path}boundary_conditions/burgers_bndval2.csv', header=None).values).reshape(-1)
+
+
+    # Boundary conditions at x=4000
+    bnd3 = torch.cartesian_prod(torch.from_numpy(np.array([4000], dtype=np.float64)), t_c).float() # x_c[-1]
+    bop3 = None
+    # u(4000,t)=0
+    bndval3 = torch.from_numpy(pd.read_csv(f'{path}boundary_conditions/burgers_bndval3.csv', header=None).values).reshape(-1)
+    #  [bnd3, bndval3]
+
+    # Putting all bconds together
+    bconds = [[bnd1, bop1, bndval1], [bnd2, bop2, bndval2], [bnd3, bop3, bndval3]]
 
     noise = False
     variance_arr = [0.001] if noise else [0]
+
+    global_modules = {
+        "discovery_module": {
+            "name_module": "SINDY"}  # "EPDE" or "SINDY"
+    }
 
     epde_config = {
         "epde_search": {
@@ -277,7 +334,7 @@ def burgers_equation():
         },
         "fit": {
             "max_deriv_order": (1, 1),
-            "boundary": 100,  #
+            "boundary": 0,  #
             "equation_terms_max_number": 3,  #
             "equation_factors_max_number": 2,
             "eq_sparsity_interval": (1e-8, 5.0),  #
@@ -289,7 +346,7 @@ def burgers_equation():
             "prune_domain": False
         },
         "glob_epde": {
-            "test_iter_limit": 10,  # how many times to launch algorithm (one time - 2-3 equations)
+            "test_iter_limit": 2,  # how many times to launch algorithm (one time - 2-3 equations)
             "variance_arr": variance_arr,
             "save_result": True,
             "load_result": False
@@ -367,6 +424,29 @@ def KdV_equation():
 
     t_d = np.linspace(0, 1, mesh + 1)
     x_d = np.linspace(0, 1, mesh + 1)
+
+    dx = pd.read_csv(f'{path}derivatives/d_x_100.csv', header=None)
+    d_x = dx.values
+    d_x = np.transpose(d_x)
+
+    dt = pd.read_csv(f'{path}derivatives/d_t_100.csv', header=None)
+    d_t = dt.values
+    d_t = np.transpose(d_t)
+
+    ddx = pd.read_csv(f'{path}derivatives/dd_x_100.csv', header=None)
+    dd_x = ddx.values
+    dd_x = np.transpose(dd_x)
+
+    dddx = pd.read_csv(f'{path}derivatives/ddd_x_100.csv', header=None)
+    ddd_x = dddx.values
+    ddd_x = np.transpose(ddd_x)
+
+    derives = np.zeros(shape=(data.shape[0], data.shape[1], 4))
+    derives[:, :, 0] = d_t
+    derives[:, :, 1] = d_x
+    derives[:, :, 2] = dd_x
+    derives[:, :, 3] = ddd_x
+
     grid = np.meshgrid(t_d, x_d, indexing='ij')
 
     param = [x_d, t_d]
@@ -375,32 +455,6 @@ def KdV_equation():
     variance_arr = [0.001] if noise else [0]
 
     bconds = False  # if there are no boundary conditions
-    """
-    Preparing boundary conditions (BC)
-
-    For every boundary we define three items
-
-    bnd=torch.Tensor of a boundary n-D points where n is the problem
-    dimensionality
-
-    bop=dict in form {'term1':term1,'term2':term2}-> term1+term2+...=0
-
-    NB! dictionary keys at the current time serve only for user-frienly 
-    description/comments and are not used in model directly thus order of
-    items must be preserved as (coeff,op,pow)
-
-    term is a dict term={coefficient:c1,[sterm1,sterm2],'pow': power}
-
-    Meaning c1*u*d2u/dx2 has the form
-
-    {'coefficient':c1,
-     'u*d2u/dx2': [[None],[0,0]],
-     'pow':[1,1]}
-
-    None is for function without derivatives
-
-    bval=torch.Tensor prescribed values at every point in the boundary
-    """
 
     x = torch.from_numpy(x_d)
     t = torch.from_numpy(t_d)
@@ -529,6 +583,11 @@ def KdV_equation():
     # Putting all bconds together
     bconds = [[bnd1, bop1, bndval1], [bnd2, bop2, bndval2], [bnd3, bop3, bndval3], [bnd4, bop4, bndval4]]
 
+    global_modules = {
+        "discovery_module": {
+            "name_module": "SINDY"}  # "EPDE" or "SINDY"
+    }
+
     epde_config = {
         "epde_search": {
             "use_solver": False,
@@ -640,4 +699,4 @@ def KdV_equation():
 
     cfg_ebs = config.Config(f'{path}config_modules.json')
 
-    return data, grid, cfg_ebs, param, bconds
+    return data, grid, derives, cfg_ebs, param, bconds

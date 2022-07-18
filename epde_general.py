@@ -31,13 +31,13 @@ def equation_fit(data, grid, derives, config_epde):
                                       training_epochs=config_epde.params["set_moeadd_params"]["training_epochs"])
 
     custom_grid_tokens = CacheStoredTokens(token_type=config_epde.params["Cache_stored_tokens"]["token_type"],
-                                             boundary=config_epde.params["fit"]["boundary"],
-                                             token_labels=config_epde.params["Cache_stored_tokens"]["token_labels"],
-                                             token_tensors=dict(
-                                                 zip(config_epde.params["Cache_stored_tokens"]["token_labels"], grid)),
-                                             params_ranges=config_epde.params["Cache_stored_tokens"]["params_ranges"],
-                                             params_equality_ranges=config_epde.params["Cache_stored_tokens"][
-                                                 "params_equality_ranges"])
+                                           boundary=config_epde.params["fit"]["boundary"],
+                                           token_labels=config_epde.params["Cache_stored_tokens"]["token_labels"],
+                                           token_tensors=dict(
+                                               zip(config_epde.params["Cache_stored_tokens"]["token_labels"], grid)),
+                                           params_ranges=config_epde.params["Cache_stored_tokens"]["params_ranges"],
+                                           params_equality_ranges=config_epde.params["Cache_stored_tokens"][
+                                               "params_equality_ranges"])
     '''
     Method epde_search.fit() is used to initiate the equation search.
     '''
@@ -74,14 +74,14 @@ def epde_equations(u, grid_u, derives, cfg, variance, title):
 
     noise = []
     for i in range(u.shape[0]):
-        noise.append(np.random.normal(0, variance * get_rms(u[i, :]), u.shape[1])) # for dimensionality == 2
+        noise.append(np.random.normal(0, variance * get_rms(u[i, :]), u.shape[1]))  # for dimensionality == 2
     noise = np.array(noise)
 
     u_total = u + noise
 
     for test_idx in np.arange(cfg.params["glob_epde"]["test_iter_limit"]):
         epde_obj = equation_fit(u_total, grid_u, derives, cfg)
-        res = epde_obj.equation_search_results(only_print=False, level_num=2) # result search
+        res = epde_obj.equation_search_results(only_print=False, level_num=2)  # result search
 
         dict_main, dict_right, k = collection.eq_table(res, dict_main, dict_right, k)
         print(test_idx)
@@ -100,7 +100,9 @@ def epde_equations(u, grid_u, derives, cfg, variance, title):
         os.mkdir(f'data/{title}/epde_result')
 
     if os.path.exists(f'data/{title}/epde_result/output_main_{title}.csv'):
-        frame_main.to_csv(f'data/{title}/epde_result/output_main_{title}_{len(os.listdir(path=f"data/{title}/epde_result/"))}.csv', sep='\t', encoding='utf-8')
+        frame_main.to_csv(
+            f'data/{title}/epde_result/output_main_{title}_{len(os.listdir(path=f"data/{title}/epde_result/"))}.csv',
+            sep='\t', encoding='utf-8')
     else:
         frame_main.to_csv(f'data/{title}/epde_result/output_main_{title}.csv', sep='\t', encoding='utf-8')
 
