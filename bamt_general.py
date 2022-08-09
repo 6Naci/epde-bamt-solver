@@ -26,19 +26,52 @@ def get_equations(synth_data, df_res, config_bamt):
                 equation_res[key] = value
         equations_result.append(equation_res)
         print(f'{i + 1}.{equation_res}')
+
+    for equation in equations_result:
+        flag = any([i for k in list(equation) if '_r' in k])  # checking whether there is a right part
+        if not flag:
+            eq = equation.copy()
+            if "C" in list(equation):
+                del eq["C"]
+            value_max = max(list(eq.values()), key=abs)
+            term_max = list(equation.keys())[list(equation.values()).index(value_max)]
+            for key, value in equation.items():
+                equation[key] = value / (-value_max)
+            equation[term_max + '_r'] = equation.pop(term_max)
+
     return equations_result
 
 
 def bs_experiment(df, config_bamt, title):
+    # Rounding values
+    for col in df.columns:
+        df[col] = df[col].round(decimals=10)
     # Deleting rows with condition
     df = df.loc[(df.sum(axis=1) != -1), (df.sum(axis=0) != 0)]
     # Deleting null columns
     df = df.loc[:, (df != 0).any(axis=0)]
     # (df != 0).sum(axis = 0)
 
+    df_new = df
+    for col in df_new.columns:
+        if '_r' not in col and col + "_r" in df_new.columns:  # union of repeated structures
+            temp = df_new[col + "_r"] + df_new[col]
+            arr_value = temp.unique()
+            arr_value.sort()
+            if len(arr_value) == 2 and (arr_value == np.array([-1, 0])).all(): # separation of the structures of the right part (for conversion to a discrete type)
+                df_new[col + "_r"] = df_new[col + "_r"] + df_new[col]
+                df_new = df_new.drop(col, axis=1)
+            else:
+                df_new[col] = df_new[col + "_r"] + df_new[col]
+                df_new = df_new.drop(col + "_r", axis=1)
+
+    for col in df_new.columns:
+        if '_r' in col:
+            df_new = df_new.astype({col: "int64"})
+
     discretizer = preprocessing.KBinsDiscretizer(n_bins=5, encode='ordinal', strategy='quantile')
     p = pp.Preprocessor([('discretizer', discretizer)])  # only discretization
-    discretized_data, est = p.apply(df)
+    discretized_data, est = p.apply(df_new)
     info_r = p.info
 
     # Initializing Bayessian Network
@@ -46,17 +79,17 @@ def bs_experiment(df, config_bamt, title):
                        use_mixture=False)  # type of Bayessian Networks (Hybrid - the right part has discrete values)
     bn.add_nodes(info_r)  # Create nodes
 
-    params = config_bamt.params["params"]
+    params = {"init_nodes": (df_new != 0).sum(axis=0).idxmax()} if not config_bamt.params["params"]["init_nodes"] else config_bamt.params["params"]
     bn.add_edges(discretized_data, scoring_function=('K2', K2Score), params=params)
     # print(bn.get_info())
 
     # bn.plot(f'{title}_{mesh}_plot.html') # redefine
 
     # Parameters Learning and Sample
-    bn.fit_parameters(df)
+    bn.fit_parameters(df_new)
 
     # Sample() function
-    df_res = df
+    df_res = df_new
     synth_data = bn.sample(config_bamt.params["glob_bamt"]["sample_k"], as_df=True)
     equations_main = get_equations(synth_data, df_res, config_bamt)
 

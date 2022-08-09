@@ -59,7 +59,7 @@ def solver_view(equation, cfg):
     """
 
     # initial params before fit-EPDE (global params)
-    dimensionality = len(cfg.params["Cache_stored_tokens"]["token_labels"])
+    dimensionality = cfg.params["global_config"]["dimensionality"]
     max_deriv_order = max(cfg.params["fit"]["max_deriv_order"])
 
     equation_main = {}
@@ -115,16 +115,18 @@ def view_for_create_eq(equation):
         0.02036869782557119 * d^2u/dx2^2{power: 1.0} + -0.6043591746687335 * u{power: 1.0} + 0.9219325066472699 = d^2u/dx1^2{power: 1.0}
     """
     form_left, form_c, form_right = '', '', ''
+    right_part = False
 
     for key, value in equation.items():
-        if '_r' not in key:
+        if '_r' not in key or right_part:
             if 'C' not in key:
                 form_left += str(value) + ' * ' + key + ' + '
             else:
                 form_c += str(value)
         else:
-            form_right += ' = ' + key
+            form_right += ' = ' + key[:-2]  # removing the '_r'
+            right_part = True
 
-    if 'C' not in equation.keys():
-        form_left = form_left[:-3] # removing the plus
-    return form_left + form_c + form_right[:-2] # removing the '_r'
+        if 'C' not in equation.keys():
+            form_c = str(0.)
+    return form_left + form_c + form_right

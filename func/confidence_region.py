@@ -18,6 +18,10 @@ def get_rms(records):
 
 
 def confidence_region_print(u, cfg, param, u_main, prepared_grid_main, variance=0):
+    # Additionally, comparison of solutions
+    for k in range(len(u_main)):
+        error_rmse = np.sqrt(np.mean((u.reshape(-1) - u_main[k].reshape(-1)) ** 2))
+        print(f'RMSE = {error_rmse}')
 
     grid = grid_format_prepare(param, "mat")
 
@@ -93,7 +97,6 @@ def confidence_region_print(u, cfg, param, u_main, prepared_grid_main, variance=
                               xaxis_title='x1',
                               yaxis_title='x2',
                               zaxis_title='u',
-                              zaxis=dict(nticks=10, dtick=1),
                               aspectratio={"x": 1, "y": 1, "z": 1}
                           ),
                           height=800, width=800

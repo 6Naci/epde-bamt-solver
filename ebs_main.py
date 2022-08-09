@@ -1,6 +1,8 @@
+import dill as pickle
 import pandas as pd
 import numpy as np
 import torch
+import os
 
 from func import load_data
 from epde_general import epde_equations
@@ -20,7 +22,7 @@ if __name__ == '__main__':
 
     u, grid_u, derivatives, cfg, params, b_conds = tasks[title]()
 
-    for variance in cfg.params["glob_epde"]["variance_arr"]:
+    for variance in cfg.params["global_config"]["variance_arr"]:
 
         df_main, epde_search_obj = epde_equations(u, grid_u, derivatives, cfg, variance, title)
 

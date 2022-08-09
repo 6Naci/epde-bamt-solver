@@ -17,27 +17,25 @@ from func.transition_bs import view_for_create_eq
 from epde.interface.equation_translator import translate_equation
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 sys.path.append('../')
 device = torch.device('cpu')
 
 
 def solver_equations(config_solver, params, b_conds, equations, epde_obj=False, title=None):
 
-    grid = grid_format_prepare(params, config_solver.params["glob_solver"]["mode"])
-
-    u_main = []
-    grid_main = grid if config_solver.params["glob_solver"]["mode"] == "mat" else grid_prepare(grid)[0] # prepared_grid
-
-    models = []
+    grid = grid_format_prepare(params, config_solver.params["glob_solver"]["mode"]).to(device)
+    grid_main = grid if config_solver.params["glob_solver"]["mode"] == "mat" else grid_prepare(grid)[0]  # prepared_grid
+    u_main, models = [], []
 
     for equation in equations:
         if not b_conds:
             text_form = view_for_create_eq(equation)
-            eq_g = translate_equation(text_form, epde_obj.pool)  # generating object of the class 'epde.structure.Equation'
+            eq_g = translate_equation(text_form, epde_obj.pool)  # generating object of the class 'epde.structure.Equation' on based search object from epde
             eq_s = eq_g.solver_form()
             b_conds = eq_g.boundary_conditions(full_domain=True)
 
-            principal_bcond_shape = b_conds[0][1].shape
+            principal_bcond_shape = b_conds[0][1].shape # if grid is only square, else !error!
             for i in range(len(b_conds)):
                 b_conds[i][1] = b_conds[i][1].reshape(principal_bcond_shape)
         else:

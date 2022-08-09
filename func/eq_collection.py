@@ -28,14 +28,14 @@ def dict_update(d_main, term, coeff, k):
 
 def eq_table(res, dict_main, dict_right, k):
     """
-    Сбор полученных ур-ний (коэффициентов и структур) в общую таблицу (рассматривается отдельно правая и левая часть ур-ния)
+    Collecting the obtained values (coefficients and structures) into a common table (the right and left parts of the equation are considered separately)
 
     Parameters
         ----------
-        res : Фронт Парето обнаруженных ур-ний
-        k : Кол-во ур-ний (итоговое)
-        dict_main : Словарь/таблица коэффициентов левой части ур-ий
-        dict_right : -//- правой части ур-ний
+        res : Pareto front of detected equations
+        k : Number of equations (final)
+        dict_main : dict/table coefficients left parts of the equation
+        dict_right : -//- the right parts of the equation
 
         Returns
         -------
@@ -47,12 +47,12 @@ def eq_table(res, dict_main, dict_right, k):
             equation_s = equation.structure[0].structure  # list of class objects 'epde.structure.Term'
             equation_c = equation.structure[0].weights_final  # coefficients of the right part
             text_form_eq = regex.sub('', equation.structure[0].text_form)  # full equation line
-            # equation.structure[0].solver_form() - тензорное представление ур-ния
-            # epde.factor.Factor (deriv_code[0] - производная токена, equality_ranges - степень/размерность параметра,
-            #                                     cache_label - название токена)
-            flag = False  # Флаг для правой части
+            # equation.structure[0].solver_form() - tensor representation of the equation
+            # epde.factor.Factor (deriv_code[0] - derivative token, equality_ranges -  dimensionality param,
+            #                                     cache_label - token name)
+            flag = False  # flag of the right part
             for t_eq in equation_s:
-                term = regex.sub('', t_eq.name)  # Полное имя слагаемого
+                term = regex.sub('', t_eq.name)  # full name term
                 for t in range(len(equation_c)):
                     c = equation_c[t]
                     if f'{c} * {term} +' in text_form_eq:
@@ -66,7 +66,7 @@ def eq_table(res, dict_main, dict_right, k):
                 if f'= {term}' == text_form_eq[text_form_eq.find('='):] and flag is False:
                     flag = True
                     term += '_r'
-                    dict_right = dict_update(dict_right, term, -1, k)
+                    dict_right = dict_update(dict_right, term, -1., k)
             k += 1
 
     print(k)

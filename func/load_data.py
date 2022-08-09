@@ -4,94 +4,81 @@ import torch
 import scipy.io
 import json
 from TEDEouS import config
+from default_configs import DEFAULT_CONFIG_EBS
 
-DEFAULT_CONFIG_EBS = """
-{
-"epde_search": {
-"use_solver": false,
-"eq_search_iter": 100
-},
-"set_memory_properties": {
-"mem_for_cache_frac": 10
-},
-"set_moeadd_params": {
-"population_size": 10,
-"training_epochs": 5
-},
-"Cache_stored_tokens": {
-"token_type": "grid",
-"token_labels": ["t", "x"],
-"params_ranges": {"power": [1, 1]},
-"params_equality_ranges": null
-},
-"fit": {
-"max_deriv_order": [2, 2],
-"boundary": 0,
-"equation_terms_max_number": 3,
-"equation_factors_max_number": 1,
-"eq_sparsity_interval": [1e-8, 5.0],
-"derivs": null,
-"deriv_method": "poly",
-"deriv_method_kwargs": {"smooth": true},
-"memory_for_cache": 25,
-"prune_domain": false
-},
-"glob_epde": {
-"test_iter_limit": 1,
-"variance_arr": [0],
-"save_result": true,
-"load_result": false
-},
-"glob_bamt": {
-"sample_k": 35,
-"lambda": 0.001,
-"plot": false,
-"save_equations": true,
-"load_equations": false
-},
-"params": {
-"init_nodes": false
-},
-"glob_solver": {
-"mode": "NN"
-},
-"Optimizer": {
-"learning_rate":1e-4,
-"lambda_bound":10,
-"optimizer":"Adam"
-},
-"Cache":{
-"use_cache":true,
-"cache_dir":"../cache/",
-"cache_verbose":false,
-"save_always":false,
-"model_randomize_parameter":0
-},
-"NN":{
-"batch_size":null,
-"lp_par":null,
-"grid_point_subset":["central"],
-"h":0.001
-},
-"Verbose":{
-"verbose":true,
-"print_every":null
-},
-"StopCriterion":{
-"eps":1e-5,
-"tmin":1000,
-"tmax":1e5 ,
-"patience":5,
-"loss_oscillation_window":100,
-"no_improvement_patience":1000   	
-},
-"Matrix":{
-"lp_par":null,
-"cache_model":null
-}
-}
-"""
 config.default_config = json.loads(DEFAULT_CONFIG_EBS)
+
+
+def example_equation():
+    """
+        path -> data -> parameters -> derivatives (optional) -> grid -> boundary conditions (optional) -> modules config (optional)
+    """
+    path = """YOUR CODE HERE"""
+    data = """YOUR CODE HERE"""
+
+    derives = None  # if there are no derivatives
+
+    grid = """YOUR CODE HERE"""
+    param = """YOUR CODE HERE"""
+
+    bconds = False  # if there are no boundary conditions
+
+    """
+    Preparing boundary conditions (BC)
+
+    For every boundary we define three items
+
+    bnd=torch.Tensor of a boundary n-D points where n is the problem
+    dimensionality
+
+    bop=dict in form {'term1':term1,'term2':term2}-> term1+term2+...=0
+
+    NB! dictionary keys at the current time serve only for user-frienly 
+    description/comments and are not used in model directly thus order of
+    items must be preserved as (coeff,op,pow)
+
+    term is a dict term={coefficient:c1,[sterm1,sterm2],'pow': power}
+
+    Meaning c1*u*d2u/dx2 has the form
+
+    {'coefficient':c1,
+     'u*d2u/dx2': [[None],[0,0]],
+     'pow':[1,1]}
+
+    None is for function without derivatives
+
+    bval=torch.Tensor prescribed values at every point in the boundary
+
+    bconds = [[bnd1, bop1, bndval1], [bnd2, bop2, bndval2], ...]
+    """
+
+    noise = False
+    variance_arr = ["""YOUR CODE HERE"""] if noise else [0]
+
+    global_modules = {
+        "global_config": {
+            "discovery_module": "EPDE",
+            "dimensionality": data.ndim
+        }
+    }
+
+    epde_config = {"""YOUR CODE HERE"""}
+
+    bamt_config = {"""YOUR CODE HERE"""}
+
+    solver_config = {"""YOUR CODE HERE"""}
+
+    config_modules = {**global_modules,
+                      **epde_config,
+                      **bamt_config,
+                      **solver_config}
+
+    with open(f'{path}config_modules.json', 'w') as fp:
+        json.dump(config_modules, fp)
+
+    cfg_ebs = config.Config(f'{path}config_modules.json')
+
+    return data, grid, derives, cfg_ebs, param, bconds
 
 
 def wave_equation():
@@ -185,6 +172,13 @@ def wave_equation():
     noise = False
     variance_arr = [0.001] if noise else [0]
 
+    global_modules = {
+        "global_config": {
+            "discovery_module": "EPDE",
+            "dimensionality": data.ndim
+        }
+    }
+
     epde_config = {
         "epde_search": {
             "use_solver": False,
@@ -245,7 +239,7 @@ def wave_equation():
         }
     }
 
-    ebs_config = {**epde_config, **bamt_config, **solver_config}
+    ebs_config = {**global_modules, **epde_config, **bamt_config, **solver_config}
 
     with open(f'{path}ebs_config.json', 'w') as fp:
         json.dump(ebs_config, fp)
@@ -266,16 +260,26 @@ def burgers_equation():
 
     data = mat['u']
     data = np.transpose(data)
-    t = mat['t'][0]
-    x = mat['x'][0]
+    t = np.ravel(mat['t'])
+    x = np.ravel(mat['x'])
 
-    dx = pd.read_csv(f'{path}wolfram_sln/burgers_sln_dx_256.csv', header=None)
+    derives = None
+    dx = pd.read_csv(f'{path}wolfram_sln_derv/burgers_sln_dx_256.csv', header=None)
     d_x = dx.values
     d_x = np.transpose(d_x)
 
-    dt = pd.read_csv(f'{path}wolfram_sln/burgers_sln_dt_256.csv', header=None)
+    dt = pd.read_csv(f'{path}wolfram_sln_derv/burgers_sln_dt_256.csv', header=None)
     d_t = dt.values
     d_t = np.transpose(d_t)
+
+    dtt = pd.read_csv(f'{path}wolfram_sln_derv/burgers_sln_dtt_256.csv', header=None)
+    d_tt = dtt.values
+    d_tt = np.transpose(d_tt)
+
+    # derives = np.zeros(shape=(data.shape[0], data.shape[1], 3))
+    # derives[:, :, 0] = d_t
+    # derives[:, :, 1] = d_tt
+    # derives[:, :, 2] = d_x
 
     derives = np.zeros(shape=(data.shape[0], data.shape[1], 2))
     derives[:, :, 0] = d_t
@@ -287,11 +291,45 @@ def burgers_equation():
     param = [x, t]
 
     bconds = False  # if there are no boundary conditions
+    x_c = torch.from_numpy(x)
+    t_c = torch.from_numpy(t)
+
+    # Initial conditions at t=0
+    bnd1 = torch.cartesian_prod(x_c, torch.from_numpy(np.array([0], dtype=np.float64))).float()
+    bop1 = None
+    # u(x, 0) = Piecewise
+    bndval1 = torch.from_numpy(pd.read_csv(f'{path}boundary_conditions/burgers_bndval1.csv', header=None).values).reshape(-1)
+
+    # Initial conditions at t=4
+    bnd2 = torch.cartesian_prod(x_c, torch.from_numpy(np.array([4], dtype=np.float64))).float()
+    bop2 = None
+    # u(x, 4) = Piecewise
+    bndval2 = torch.from_numpy(pd.read_csv(f'{path}boundary_conditions/burgers_bndval1_2.csv', header=None).values).reshape(-1)
+
+    # Boundary conditions at x=-4000
+    bnd3 = torch.cartesian_prod(torch.from_numpy(np.array([-4000], dtype=np.float64)), t_c).float() # x_c[0]
+    bop3 = None
+    # u(-4000,t)=1000
+    bndval3 = torch.from_numpy(pd.read_csv(f'{path}boundary_conditions/burgers_bndval2.csv', header=None).values).reshape(-1)
+
+    # Boundary conditions at x=4000
+    bnd4 = torch.cartesian_prod(torch.from_numpy(np.array([4000], dtype=np.float64)), t_c).float() # x_c[-1]
+    bop4 = None
+    # u(4000,t)=0
+    bndval4 = torch.from_numpy(pd.read_csv(f'{path}boundary_conditions/burgers_bndval3.csv', header=None).values).reshape(-1)
+    # Putting all bconds together
+    bconds = [[bnd1, bop1, bndval1], [bnd2, bop2, bndval2], [bnd3, bop3, bndval3], [bnd4, bop4, bndval4]]
 
     noise = False
     variance_arr = [0.001] if noise else [0]
 
-    """YOUR CODE HERE"""
+    global_modules = {
+        "global_config": {
+            "discovery_module": "EPDE",
+            "dimensionality": data.ndim,
+            "variance_arr": variance_arr
+        }
+    }
 
     epde_config = {
         "epde_search": {
@@ -302,7 +340,7 @@ def burgers_equation():
             "mem_for_cache_frac": 10
         },
         "set_moeadd_params": {
-            "population_size": 10,  #
+            "population_size": 15,  #
             "training_epochs": 5
         },
         "Cache_stored_tokens": {
@@ -313,20 +351,19 @@ def burgers_equation():
         },
         "fit": {
             "max_deriv_order": (1, 1),
-            "boundary": 100,  #
+            "boundary": 0,  #
             "equation_terms_max_number": 3,  #
             "equation_factors_max_number": 2,
             "eq_sparsity_interval": (1e-8, 5.0),  #
-            "deriv_method": "ANN",  #
-            "deriv_method_kwargs": {"epochs_max": 1000},  #
-            # "deriv_method": "poly",
-            # "deriv_method_kwargs": {'smooth': True},
+            # "deriv_method": "ANN",  #
+            # "deriv_method_kwargs": {"epochs_max": 1000},  #
+            "deriv_method": "poly",
+            "deriv_method_kwargs": {'smooth': True},
             "memory_for_cache": 25,
             "prune_domain": False
         },
         "glob_epde": {
-            "test_iter_limit": 10,  # how many times to launch algorithm (one time - 2-3 equations)
-            "variance_arr": variance_arr,
+            "test_iter_limit": 100,  # how many times to launch algorithm (one time - 2-3 equations)
             "save_result": True,
             "load_result": False
         }
@@ -334,11 +371,14 @@ def burgers_equation():
 
     bamt_config = {
         "glob_bamt": {
-            "sample_k": 3,
-            "lambda": 0.01,
+            "sample_k": 30,
+            "lambda": 0.0001,
             "plot": False,
             "save_equations": True,
             "load_equations": False
+        },
+        "params": {
+            "init_nodes": 'du/dx2{power: 1.0} * u{power: 1.0}_r'
         }
     }
 
@@ -347,17 +387,21 @@ def burgers_equation():
             "mode": "mat"
         },
         "Cache": {
-            "use_cache": True,
-            "save_always": True,
-        }
+            "use_cache": False,
+            "save_always": False,
+        },
+        "Optimizer": {
+            "learning_rate": 100,
+            "lambda_bound": 5,
+        },
     }
 
-    ebs_config = {**epde_config, **bamt_config, **solver_config}
+    config_modules = {**global_modules, **epde_config, **bamt_config, **solver_config}
 
-    with open(f'{path}ebs_config.json', 'w') as fp:
-        json.dump(ebs_config, fp)
+    with open(f'{path}config_modules.json', 'w') as fp:
+        json.dump(config_modules, fp)
 
-    cfg_ebs = config.Config(f'{path}ebs_config.json')
+    cfg_ebs = config.Config(f'{path}config_modules.json')
 
     return data, grid, derives, cfg_ebs, param, bconds
 
