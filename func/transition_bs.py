@@ -114,6 +114,17 @@ def view_for_create_eq(equation):
         -------
         0.02036869782557119 * d^2u/dx2^2{power: 1.0} + -0.6043591746687335 * u{power: 1.0} + 0.9219325066472699 = d^2u/dx1^2{power: 1.0}
     """
+    flag = any(['_r' in k for k in list(equation)])  # checking whether there is a right part
+    if not flag:
+        eq = equation.copy()
+        if "C" in list(equation):
+            del eq["C"]
+        value_max = max(list(eq.values()), key=abs)
+        term_max = list(equation.keys())[list(equation.values()).index(value_max)]
+        for key, value in equation.items():
+            equation[key] = value / (-value_max)
+        equation[term_max + '_r'] = equation.pop(term_max)
+
     form_left, form_c, form_right = '', '', ''
     right_part = False
 

@@ -1,5 +1,6 @@
 /venv/
 .idea/
 __pycache__/
+data/
 data/wave_equation/archive/
 data/burgers_equation/archive/

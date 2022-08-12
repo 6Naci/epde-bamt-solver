@@ -27,18 +27,6 @@ def get_equations(synth_data, df_res, config_bamt):
         equations_result.append(equation_res)
         print(f'{i + 1}.{equation_res}')
 
-    for equation in equations_result:
-        flag = any([i for k in list(equation) if '_r' in k])  # checking whether there is a right part
-        if not flag:
-            eq = equation.copy()
-            if "C" in list(equation):
-                del eq["C"]
-            value_max = max(list(eq.values()), key=abs)
-            term_max = list(equation.keys())[list(equation.values()).index(value_max)]
-            for key, value in equation.items():
-                equation[key] = value / (-value_max)
-            equation[term_max + '_r'] = equation.pop(term_max)
-
     return equations_result
 
 
@@ -79,7 +67,11 @@ def bs_experiment(df, config_bamt, title):
                        use_mixture=False)  # type of Bayessian Networks (Hybrid - the right part has discrete values)
     bn.add_nodes(info_r)  # Create nodes
 
-    params = {"init_nodes": (df_new != 0).sum(axis=0).idxmax()} if not config_bamt.params["params"]["init_nodes"] else config_bamt.params["params"]
+    df_temp = df_new
+    if "C" in df_temp.columns.tolist():
+        df_temp = df_temp.drop("C", axis=1)
+    init_nodes = (df_temp != 0).sum(axis=0).idxmax()
+    params = {"init_nodes": [init_nodes]} if not config_bamt.params["params"]["init_nodes"] else config_bamt.params["params"]
     bn.add_edges(discretized_data, scoring_function=('K2', K2Score), params=params)
     # print(bn.get_info())
 

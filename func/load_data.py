@@ -351,7 +351,7 @@ def burgers_equation():
         },
         "fit": {
             "max_deriv_order": (1, 1),
-            "boundary": 0,  #
+            "boundary": 20,  #
             "equation_terms_max_number": 3,  #
             "equation_factors_max_number": 2,
             "eq_sparsity_interval": (1e-8, 5.0),  #
@@ -378,7 +378,7 @@ def burgers_equation():
             "load_equations": False
         },
         "params": {
-            "init_nodes": 'du/dx2{power: 1.0} * u{power: 1.0}_r'
+            "init_nodes": 'du/dx1{power: 1.0}_r'
         }
     }
 
