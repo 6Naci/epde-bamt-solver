@@ -80,9 +80,10 @@ title = list(tasks.keys())[1]  # name of the problem/equation
 <details>
 <summary>1. Волновое уравнение с одной пространственной переменной (подробнее)</summary>
 <br>
-<p align="center">
-<img src="https://latex.codecogs.com/svg.latex?\color{white}&space; \\ \frac{\partial^{2} u}{\partial t^{2}} - \frac{1}{25} \frac{\partial^{2} u}{\partial x^{2}} = 0, \\ \\ 100\times100, x \in [0; 1], t \in [0; 1]." title="" />
-</p>
+
+$$ \frac{\partial^{2} u}{\partial t^{2}} - \frac{1}{25} \frac{\partial^{2} u}{\partial x^{2}} = 0, $$
+
+$$ \\ 100\times100, x \in [0; 1], t \in [0; 1].$$
 
 Выход модуля `EPDE` представляется в виде таблицы. Полями в таблице являются структуры полученных ДУЧП, где каждая строка содержит коэффициенты при каждой структуре. 
 
@@ -106,9 +107,9 @@ title = list(tasks.keys())[1]  # name of the problem/equation
 <summary>2. Невязкое уравнение Бюргерса</summary>
 <br>
 
-<p align="center">
-<img src="https://latex.codecogs.com/svg.latex?\color{white}&space; \\ \frac{\partial u}{\partial t} +  u \frac{\partial u}{\partial x} = 0, \\ \\ 256\times256, x \in [-4000; 4000], t \in [0; 4]." title="" />
-</p>
+$$ \frac{\partial u}{\partial t} +  u \frac{\partial u}{\partial x} = 0, $$
+
+$$ \\ 256\times256, x \in [-4000; 4000], t \in [0; 4]. $$
 
 ![title](docs/examples/burgers_equation/distribution.png)
 
