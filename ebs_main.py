@@ -15,6 +15,7 @@ if __name__ == '__main__':
     tasks = {
         'wave_equation': load_data.wave_equation,
         'burgers_equation': load_data.burgers_equation,
+        'burgers_equation_small_grid': load_data.burgers_equation_small_grid,
         'KdV_equation': load_data.KdV_equation
     }
 

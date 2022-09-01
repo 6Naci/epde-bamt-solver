@@ -659,3 +659,106 @@ def KdV_equation():
     cfg_ebs.set_parameter('NN.h', 0.01)
 
     return data, grid, cfg_ebs, param, bconds
+
+
+def burgers_equation_small_grid():
+
+    path = "data/burgers_equation_small_grid/"
+    df = pd.read_csv(f'{path}burgers_sln_100.csv', header=None)
+    data = df.values
+    data = np.transpose(data)  # x1 - t (axis Y), x2 - x (axis X)
+
+    derives = None
+
+    x = np.linspace(-1000, 0, 101)
+    t = np.linspace(0, 1, 101)
+    grid = np.meshgrid(t, x, indexing='ij')
+
+    param = [t, x]
+
+    bconds = False  # if there are no boundary conditions
+
+    noise = True
+    variance_arr = [0.10] if noise else [0]
+
+    global_modules = {
+        "global_config": {
+            "discovery_module": "EPDE",
+            "dimensionality": data.ndim,
+            "variance_arr": variance_arr
+        }
+    }
+
+    epde_config = {
+        "epde_search": {
+            "use_solver": False,
+            "eq_search_iter": 100
+        },
+        "set_memory_properties": {
+            "mem_for_cache_frac": 10
+        },
+        "set_moeadd_params": {
+            "population_size": 15,  #
+            "training_epochs": 5
+        },
+        "Cache_stored_tokens": {
+            "token_type": "grid",
+            "token_labels": ["t", "x"],
+            "params_ranges": {"power": (1, 1)},
+            "params_equality_ranges": None
+        },
+        "fit": {
+            "max_deriv_order": (1, 1),
+            "boundary": 13,  #
+            "equation_terms_max_number": 3,  #
+            "equation_factors_max_number": 2,
+            "eq_sparsity_interval": (1e-8, 5.0),  #
+            # "deriv_method": "ANN",  #
+            # "deriv_method_kwargs": {"epochs_max": 1000},  #
+            "deriv_method": "poly",
+            "deriv_method_kwargs": {'smooth': True},
+            "memory_for_cache": 25,
+            "prune_domain": False
+        },
+        "glob_epde": {
+            "test_iter_limit": 15,  # how many times to launch algorithm (one time - 2-3 equations)
+            "save_result": True,
+            "load_result": False
+        }
+    }
+
+    bamt_config = {
+        "glob_bamt": {
+            "sample_k": 35,
+            "lambda": 0.00001,
+            "plot": False,
+            "save_equations": True,
+            "load_equations": False
+        },
+        "params": {
+            "init_nodes": 'du/dx1{power: 1.0}_r'
+        }
+    }
+
+    solver_config = {
+        "glob_solver": {
+            "mode": "mat"
+        },
+        "Cache": {
+            "use_cache": False,
+            "save_always": False,
+        },
+        "Optimizer": {
+            "learning_rate": 100,
+            "lambda_bound": 5,
+        },
+    }
+
+    config_modules = {**global_modules, **epde_config, **bamt_config, **solver_config}
+
+    with open(f'{path}config_modules.json', 'w') as fp:
+        json.dump(config_modules, fp)
+
+    cfg_ebs = config.Config(f'{path}config_modules.json')
+
+    return data, grid, derives, cfg_ebs, param, bconds
