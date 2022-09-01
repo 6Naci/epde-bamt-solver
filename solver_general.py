@@ -17,7 +17,6 @@ from func.transition_bs import view_for_create_eq
 from epde.interface.equation_translator import translate_equation
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
-os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 sys.path.append('../')
 device = torch.device('cpu')
 
@@ -29,20 +28,23 @@ def solver_equations(config_solver, params, b_conds, equations, epde_obj=False, 
     u_main, models = [], []
 
     for equation in equations:
+        start = time.time()
         if not b_conds:
             text_form = view_for_create_eq(equation)
             eq_g = translate_equation(text_form, epde_obj.pool)  # generating object of the class 'epde.structure.Equation' on based search object from epde
             eq_s = eq_g.solver_form()
-            b_conds = eq_g.boundary_conditions(full_domain=True)
+            b_conds_g = eq_g.boundary_conditions(full_domain=True)
 
-            principal_bcond_shape = b_conds[0][1].shape # if grid is only square, else !error!
-            for i in range(len(b_conds)):
-                b_conds[i][1] = b_conds[i][1].reshape(principal_bcond_shape)
+            principal_bcond_shape = b_conds_g[0][1].shape # if grid is only square, else !error!
+            for i in range(len(b_conds_g)):
+                b_conds_g[i][1] = b_conds_g[i][1].reshape(principal_bcond_shape)
+            model = solver.optimization_solver(params, None, eq_s, b_conds_g, config_solver,
+                                               mode=config_solver.params["glob_solver"]["mode"])
         else:
             eq_s = transform.solver_view(equation, config_solver)
+            model = solver.optimization_solver(params, None, eq_s, b_conds, config_solver,
+                                               mode=config_solver.params["glob_solver"]["mode"])
 
-        start = time.time()
-        model = solver.optimization_solver(params, None, eq_s, b_conds, config_solver, mode=config_solver.params["glob_solver"]["mode"])
         end = time.time()
         print(f'Time = {end - start}')
 
@@ -64,10 +66,10 @@ def solver_equations(config_solver, params, b_conds, equations, epde_obj=False, 
 
     number_of_files = int(len(os.listdir(path=f"data/{title}/solver_result/")) // 2)
 
-    if os.path.exists(f'data/{title}/solver_result/file_u_main_{list(u_main.shape)}_{config_solver.params["glob_solver"]["mode"]}.pt'):
-        torch.save(u_main, f'data/{title}/solver_result/file_u_main_{list(u_main.shape)}_{config_solver.params["glob_solver"]["mode"]}_{number_of_files}.pt')
+    if os.path.exists(f'data/{title}/solver_result/file_u_main_{list(u_main.shape)}_{config_solver.params["glob_solver"]["mode"]}_{config_solver.params["global_config"]["variance_arr"]}.pt'):
+        torch.save(u_main, f'data/{title}/solver_result/file_u_main_{list(u_main.shape)}_{config_solver.params["glob_solver"]["mode"]}_{config_solver.params["global_config"]["variance_arr"]}_{number_of_files}.pt')
     else:
-        torch.save(u_main, f'data/{title}/solver_result/file_u_main_{list(u_main.shape)}_{config_solver.params["glob_solver"]["mode"]}.pt')
+        torch.save(u_main, f'data/{title}/solver_result/file_u_main_{list(u_main.shape)}_{config_solver.params["glob_solver"]["mode"]}_{config_solver.params["global_config"]["variance_arr"]}.pt')
 
     if os.path.exists(f'data/{title}/solver_result/file_prepared_grid_main_{list(grid_main.size())}_{config_solver.params["glob_solver"]["mode"]}.pt'):
         torch.save(grid_main, f'data/{title}/solver_result/file_prepared_grid_main_{list(grid_main.size())}_{config_solver.params["glob_solver"]["mode"]}_{number_of_files}.pt')
