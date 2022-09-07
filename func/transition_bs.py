@@ -16,7 +16,7 @@ def dev_variable(term, unknown_var, max_order):  # for variable definition and w
     return [None]
 
 
-def solver_view(equation, cfg):
+def solver_view(equation, cfg, reverse):
     """
         Transition from the type of BAMT output data to the type required by SOLVER.
 
@@ -27,6 +27,8 @@ def solver_view(equation, cfg):
             'u{power: 1.0}': -0.6043591746687335, 'C': 0.9219325066472699, 'd^2u/dx2^2{power: 1.0}_r': '-1'}.
 
         cfg : class Config from TEDEouS/config.py contains the initial configuration of the task
+
+        reverse: bool param, where true - if the order of parameters EPDE, SOLVER is different, False otherwise
 
         Returns
         -------
@@ -65,8 +67,10 @@ def solver_view(equation, cfg):
     equation_main = {}
     unknown_variables = {}  # x1, x2, ..., xn
     for i in range(dimensionality):
-        unknown_variables[
-            f'x{i + 1}'] = dimensionality - 1 - i  # x1 = 1, x2 = 0, because (epde = [t, x], solver = [x, t])
+        if reverse:
+            unknown_variables[f'x{i + 1}'] = dimensionality - 1 - i  # x1 = 1, x2 = 0, because (epde = [t, x], solver = [x, t])
+        else:
+            unknown_variables[f'x{i + 1}'] = i # x1 = 0, x2 = 1, because (epde = [x, t], solver = [x, t])
 
     for term_i, value_i in equation.items():
 

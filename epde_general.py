@@ -96,14 +96,14 @@ def epde_equations(u, grid_u, derives, cfg, variance, title):
     frame = pd.DataFrame(dict_main)
     frame_main = frame.loc[:, (frame != 0).any(axis=0)]  # deleting empty columns
 
-    # Save
-    if not (os.path.exists(f'data/{title}/epde_result')):
-        os.mkdir(f'data/{title}/epde_result')
-
-    if os.path.exists(f'data/{title}/epde_result/output_main_{title}.csv'):
-        frame_main.to_csv(f'data/{title}/epde_result/output_main_{title}_{len(os.listdir(path=f"data/{title}/epde_result/"))}.csv', sep='\t', encoding='utf-8')
-    else:
-        frame_main.to_csv(f'data/{title}/epde_result/output_main_{title}.csv', sep='\t', encoding='utf-8')
+    # # Save
+    # if not (os.path.exists(f'data/{title}/epde_result')):
+    #     os.mkdir(f'data/{title}/epde_result')
+    #
+    # if os.path.exists(f'data/{title}/epde_result/output_main_{title}.csv'):
+    #     frame_main.to_csv(f'data/{title}/epde_result/output_main_{title}_{len(os.listdir(path=f"data/{title}/epde_result/"))}.csv', sep='\t', encoding='utf-8')
+    # else:
+    #     frame_main.to_csv(f'data/{title}/epde_result/output_main_{title}.csv', sep='\t', encoding='utf-8')
 
     # # Load data
     # frame_main = pd.read_csv(f'data/{title}/epde_result/output_main_{title}.csv', index_col='Unnamed: 0', sep='\t', encoding='utf-8')

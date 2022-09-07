@@ -167,8 +167,7 @@ def wave_equation():
     bndval4 = torch.from_numpy(np.zeros(len(bnd4), dtype=np.float64))
 
     # Putting all bconds together
-    bconds = [[bnd1, bop1, bndval1], [bnd2, bop2, bndval2], [bnd3, bop3, bndval3], [bnd4, bop4, bndval4]]
-
+    bconds = [[bnd1, bndval1], [bnd2, bop2, bndval2], [bnd3, bndval3], [bnd4, bndval4]]
     noise = False
     variance_arr = [0.001] if noise else [0]
 
@@ -235,7 +234,12 @@ def wave_equation():
         },
         "Cache": {
             "use_cache": True,
-            "save_always": True,
+            "save_always": False,
+        },
+        "Optimizer": {
+            "learning_rate": 1e-3,
+            "lambda_bound": 100,
+            "optimizer": "Adam"
         }
     }
 
@@ -317,9 +321,9 @@ def burgers_equation():
     bop4 = None
     # u(4000,t)=0
     bndval4 = torch.from_numpy(pd.read_csv(f'{path}boundary_conditions/burgers_bndval3.csv', header=None).values).reshape(-1)
-    # Putting all bconds together
-    bconds = [[bnd1, bop1, bndval1], [bnd2, bop2, bndval2], [bnd3, bop3, bndval3], [bnd4, bop4, bndval4]]
-
+    # Putting all bconds together,
+    # bconds = [[bnd1, bop1, bndval1], [bnd2, bop2, bndval2], [bnd3, bop3, bndval3],[bnd4, bop4, bndval4]]
+    bconds = [[bnd1, bndval1], [bnd2, bndval2], [bnd3, bndval3], [bnd4, bndval4]]
     noise = False
     variance_arr = [0.001] if noise else [0]
 
@@ -384,7 +388,8 @@ def burgers_equation():
 
     solver_config = {
         "glob_solver": {
-            "mode": "mat"
+            "mode": "mat",
+            "reverse": False
         },
         "Cache": {
             "use_cache": False,
@@ -742,7 +747,8 @@ def burgers_equation_small_grid():
 
     solver_config = {
         "glob_solver": {
-            "mode": "mat"
+            "mode": "mat",
+            "reverse": False
         },
         "Cache": {
             "use_cache": False,

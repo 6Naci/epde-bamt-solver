@@ -55,7 +55,8 @@ DEFAULT_CONFIG_EBS = '''
 
 "SOLVER_config": "commentary",
 "glob_solver": {
-"mode": "NN"
+"mode": "NN",
+"reverse": false
 },
 "Optimizer": {
 "learning_rate":1e-4,

@@ -8,6 +8,7 @@ import statistics
 
 from TEDEouS.solver import grid_format_prepare
 pio.renderers.default = "browser"
+device = torch.device('cpu')
 
 
 def get_rms(records):
@@ -17,13 +18,18 @@ def get_rms(records):
     return math.sqrt(sum([x ** 2 for x in records]) / len(records))
 
 
-def confidence_region_print(u, cfg, param, u_main, prepared_grid_main, variance=0):
+def confidence_region_print(u, cfg, param, u_main, variance=0):
+
+    grid = grid_format_prepare(param, "mat")
+    prepared_grid_main = grid_format_prepare(param, cfg.params["glob_solver"]["mode"]).to(device)
+
+    if not cfg.params["glob_solver"]["reverse"]: # important! relationship of parameters between EPDE and SOLVER
+        u = np.transpose(u)
+
     # Additionally, comparison of solutions
     for k in range(len(u_main)):
         error_rmse = np.sqrt(np.mean((u.reshape(-1) - u_main[k].reshape(-1)) ** 2))
         print(f'RMSE = {error_rmse}')
-
-    grid = grid_format_prepare(param, "mat")
 
     if u.ndim == 2:
 

@@ -29,6 +29,6 @@ if __name__ == '__main__':
 
         equations = bs_experiment(df_main, cfg, title)
 
-        u_main, grid_main = solver_equations(cfg, params, b_conds, equations, epde_search_obj, title)
+        u_main, models = solver_equations(cfg, params, b_conds, equations, epde_search_obj, title)
 
-        conf_plt.confidence_region_print(u, cfg, params, u_main, grid_main, variance)
+        conf_plt.confidence_region_print(u, cfg, params, u_main, variance)
