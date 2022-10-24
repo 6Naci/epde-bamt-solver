@@ -13,10 +13,10 @@ from func import confidence_region as conf_plt
 if __name__ == '__main__':
 
     tasks = {
-        'wave_equation': load_data.wave_equation,
-        'burgers_equation': load_data.burgers_equation,
-        'burgers_equation_small_grid': load_data.burgers_equation_small_grid,
-        'KdV_equation': load_data.KdV_equation
+        'wave_equation': load_data.wave_equation, # 0
+        'burgers_equation': load_data.burgers_equation, # 1
+        'burgers_equation_small_grid': load_data.burgers_equation_small_grid, # 2
+        'KdV_equation': load_data.KdV_equation # 3
     }
 
     title = list(tasks.keys())[0]  # name of the problem/equation

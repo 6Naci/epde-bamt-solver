@@ -91,6 +91,11 @@ DEFAULT_CONFIG_EBS = '''
 "Matrix":{
 "lp_par":null,
 "cache_model":null
+},
+"Plot":{
+"step_plot_print":false,
+"step_plot_save":false, 
+"image_save_dir":null
 }
 }
 '''

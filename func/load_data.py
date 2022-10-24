@@ -1,3 +1,5 @@
+import math
+import os
 import numpy as np
 import pandas as pd
 import torch
@@ -174,7 +176,8 @@ def wave_equation():
     global_modules = {
         "global_config": {
             "discovery_module": "EPDE",
-            "dimensionality": data.ndim
+            "dimensionality": data.ndim,
+            "variance_arr": variance_arr
         }
     }
 
@@ -209,7 +212,6 @@ def wave_equation():
         },
         "glob_epde": {
             "test_iter_limit": 1,  # how many times to launch algorithm (one time - 2-3 equations)
-            "variance_arr": variance_arr,
             "save_result": True,
             "load_result": False
         }
@@ -228,9 +230,15 @@ def wave_equation():
         }
     }
 
+    img_dir = f'{path}wave_img'
+
+    if not (os.path.isdir(img_dir)):
+        os.mkdir(img_dir)
+
     solver_config = {
         "glob_solver": {
-            "mode": "NN"
+            "mode": "NN",
+            "reverse": True
         },
         "Cache": {
             "use_cache": True,
@@ -240,6 +248,11 @@ def wave_equation():
             "learning_rate": 1e-3,
             "lambda_bound": 100,
             "optimizer": "Adam"
+        },
+        "Plot": {
+            "step_plot_print": False,
+            "step_plot_save": True,
+            "image_save_dir": img_dir,
         }
     }
 
@@ -745,6 +758,11 @@ def burgers_equation_small_grid():
         }
     }
 
+    img_dir = f'{path}burgers_img'
+
+    if not (os.path.isdir(img_dir)):
+        os.mkdir(img_dir)
+
     solver_config = {
         "glob_solver": {
             "mode": "mat",
@@ -758,6 +776,11 @@ def burgers_equation_small_grid():
             "learning_rate": 100,
             "lambda_bound": 5,
         },
+        "Plot": {
+            "step_plot_print": False,
+            "step_plot_save": True,
+            "image_save_dir": img_dir,
+        }
     }
 
     config_modules = {**global_modules, **epde_config, **bamt_config, **solver_config}
