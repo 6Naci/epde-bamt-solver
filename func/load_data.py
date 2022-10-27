@@ -184,24 +184,25 @@ def wave_equation():
     epde_config = {
         "epde_search": {
             "use_solver": False,
-            "eq_search_iter": 100
+            "boundary": 15,  #
+            "verbose_params": {"show_moeadd_epochs": True}
         },
-        "set_memory_properties": {
-            "mem_for_cache_frac": 10
-        },
+        # "set_memory_properties": {
+        #     "mem_for_cache_frac": 10
+        # },
         "set_moeadd_params": {
-            "population_size": 10,  #
+            "population_size": 3,  #
             "training_epochs": 5
         },
-        "Cache_stored_tokens": {
-            "token_type": "grid",
-            "token_labels": ["t", "x"],
-            "params_ranges": {"power": (1, 1)},
-            "params_equality_ranges": None
-        },
+        # "Cache_stored_tokens": {
+        #     "token_type": "grid",
+        #     "token_labels": ["t", "x"],
+        #     "params_ranges": {"power": (1, 1)},
+        #     "params_equality_ranges": None
+        # },
         "fit": {
+            "variable_names": ['u', ],
             "max_deriv_order": (2, 2),
-            "boundary": 15,  #
             "equation_terms_max_number": 3,  #
             "equation_factors_max_number": 1,
             "eq_sparsity_interval": (1e-8, 5.0),  #
@@ -211,7 +212,7 @@ def wave_equation():
             "prune_domain": False
         },
         "glob_epde": {
-            "test_iter_limit": 1,  # how many times to launch algorithm (one time - 2-3 equations)
+            "test_iter_limit": 3,  # how many times to launch algorithm (one time - 2-3 equations)
             "save_result": True,
             "load_result": False
         }
@@ -265,7 +266,7 @@ def wave_equation():
 
     return data, grid, derives, cfg_ebs, param, bconds
 
-
+# no changes
 def burgers_equation():
     """
         Load data from github
@@ -423,7 +424,7 @@ def burgers_equation():
 
     return data, grid, derives, cfg_ebs, param, bconds
 
-
+# no changes
 def KdV_equation():
     """
 
@@ -696,7 +697,7 @@ def burgers_equation_small_grid():
 
     bconds = False  # if there are no boundary conditions
 
-    noise = True
+    noise = False
     variance_arr = [0.10] if noise else [0]
 
     global_modules = {
@@ -710,24 +711,25 @@ def burgers_equation_small_grid():
     epde_config = {
         "epde_search": {
             "use_solver": False,
-            "eq_search_iter": 100
+            "boundary": 10,  #
+            "verbose_params": {"show_moeadd_epochs": True}
         },
-        "set_memory_properties": {
-            "mem_for_cache_frac": 10
-        },
+        # "set_memory_properties": {
+        #     "mem_for_cache_frac": 10
+        # },
         "set_moeadd_params": {
-            "population_size": 15,  #
+            "population_size": 5,  #
             "training_epochs": 5
         },
-        "Cache_stored_tokens": {
-            "token_type": "grid",
-            "token_labels": ["t", "x"],
-            "params_ranges": {"power": (1, 1)},
-            "params_equality_ranges": None
-        },
+        # "Cache_stored_tokens": {
+        #     "token_type": "grid",
+        #     "token_labels": ["t", "x"],
+        #     "params_ranges": {"power": (1, 1)},
+        #     "params_equality_ranges": None
+        # },
         "fit": {
+            "variable_names": ['u', ],
             "max_deriv_order": (1, 1),
-            "boundary": 13,  #
             "equation_terms_max_number": 3,  #
             "equation_factors_max_number": 2,
             "eq_sparsity_interval": (1e-8, 5.0),  #
@@ -739,7 +741,7 @@ def burgers_equation_small_grid():
             "prune_domain": False
         },
         "glob_epde": {
-            "test_iter_limit": 15,  # how many times to launch algorithm (one time - 2-3 equations)
+            "test_iter_limit": 1,  # how many times to launch algorithm (one time - 2-3 equations)
             "save_result": True,
             "load_result": False
         }
@@ -784,6 +786,71 @@ def burgers_equation_small_grid():
     }
 
     config_modules = {**global_modules, **epde_config, **bamt_config, **solver_config}
+
+    with open(f'{path}config_modules.json', 'w') as fp:
+        json.dump(config_modules, fp)
+
+    cfg_ebs = config.Config(f'{path}config_modules.json')
+
+    return data, grid, derives, cfg_ebs, param, bconds
+
+
+def hunter_prey():
+
+    path = "data/hunter_prey/"
+
+    t = np.load(f'{path}t.npy')
+    data = np.load(f'{path}data.npy')
+    x = data[:, 0]
+    y = data[:, 1]
+    data = [x, y]
+    grid = [t, ]
+
+    derives = None
+
+    param = [t, ]
+
+    bconds = False  # if there are no boundary conditions
+
+    noise = False
+    variance_arr = [0.10] if noise else [0]
+
+    global_modules = {
+        "global_config": {
+            "discovery_module": "EPDE",
+            "dimensionality": x.ndim + 1,
+            "variance_arr": variance_arr
+        }
+    }
+
+    epde_config = {
+        "epde_search": {
+            "use_solver": False,
+            "boundary": 10, #
+            "verbose_params": {"show_moeadd_epochs": True}
+        },
+        "set_moeadd_params": {
+            "population_size": 5,  #
+            "training_epochs": 7
+        },
+        "fit": {
+            "variable_names": ['u', 'v'], #
+            "max_deriv_order": (1,),
+            "equation_terms_max_number": 3,  #
+            "equation_factors_max_number": {'factors_num': [1, 2], 'probas': [0.8, 0.2]},
+            "data_fun_pow": 1,
+            "eq_sparsity_interval": (1e-10, 1e-2),  #
+            "deriv_method": "poly",
+            "deriv_method_kwargs": {'smooth': False},
+        },
+        "glob_epde": {
+            "test_iter_limit": 50,  # how many times to launch algorithm (one time - 2-3 equations)
+            "save_result": True,
+            "load_result": False
+        }
+    }
+
+    config_modules = {**global_modules, **epde_config}
 
     with open(f'{path}config_modules.json', 'w') as fp:
         json.dump(config_modules, fp)

@@ -8,7 +8,8 @@ DEFAULT_CONFIG_EBS = '''
 "EPDE_config": "commentary",
 "epde_search": {
 "use_solver": false,
-"eq_search_iter": 100
+"boundary": 0,
+"verbose_params": {"show_moeadd_epochs": true}
 },
 "set_memory_properties": {
 "mem_for_cache_frac": 10
@@ -24,16 +25,20 @@ DEFAULT_CONFIG_EBS = '''
 "params_equality_ranges": null
 },
 "fit": {
+"variable_names": ["u"],
 "max_deriv_order": [2, 2],
-"boundary": 0,
 "equation_terms_max_number": 3,
+"data_fun_pow": 1,
 "equation_factors_max_number": 1,
-"eq_sparsity_interval": [1e-8, 5.0],
+"eq_sparsity_interval": [1e-4, 2.5],
 "derivs": null,
 "deriv_method": "poly",
 "deriv_method_kwargs": {"smooth": true},
-"memory_for_cache": 25,
+"memory_for_cache": 5,
 "prune_domain": false
+},
+"results":{
+"level_num": 1
 },
 "glob_epde": {
 "test_iter_limit": 1,
