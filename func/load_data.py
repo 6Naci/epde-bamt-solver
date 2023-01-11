@@ -60,7 +60,7 @@ def example_equation():
     global_modules = {
         "global_config": {
             "discovery_module": "EPDE",
-            "dimensionality": data.ndim
+            "dimensionality": data.ndim - 1 # (starts from 0 - [t,], 1 - [t, x], 2 - [t, x, y])
         }
     }
 
@@ -176,7 +176,7 @@ def wave_equation():
     global_modules = {
         "global_config": {
             "discovery_module": "EPDE",
-            "dimensionality": data.ndim,
+            "dimensionality": 1,
             "variance_arr": variance_arr
         }
     }
@@ -213,8 +213,8 @@ def wave_equation():
         },
         "glob_epde": {
             "test_iter_limit": 3,  # how many times to launch algorithm (one time - 2-3 equations)
-            "save_result": True,
-            "load_result": False
+            "save_result": False,
+            "load_result": True
         }
     }
 
@@ -223,11 +223,14 @@ def wave_equation():
             "sample_k": 35,
             "lambda": 0.0001,
             "plot": False,
-            "save_equations": True,
-            "load_equations": False
+            "save_result": False,
+            "load_result": True
         },
         "params": {
             "init_nodes": ['d^2u/dx2^2{power: 1.0}']
+        },
+        "correct_structures": {
+            "list_unique": ['d^2u/dx2^2{power: 1.0}', 'd^2u/dx1^2{power: 1.0}_r']
         }
     }
 
@@ -244,6 +247,7 @@ def wave_equation():
         "Cache": {
             "use_cache": True,
             "save_always": False,
+            "cache_dir": f"{path}cache/"
         },
         "Optimizer": {
             "learning_rate": 1e-3,
@@ -252,7 +256,7 @@ def wave_equation():
         },
         "Plot": {
             "step_plot_print": False,
-            "step_plot_save": True,
+            "step_plot_save": False,
             "image_save_dir": img_dir,
         }
     }
@@ -397,13 +401,16 @@ def burgers_equation():
         },
         "params": {
             "init_nodes": 'du/dx1{power: 1.0}_r'
+        },
+        "correct_structures": {
+            "list_unique": ['du/dx1{power: 1.0}', 'du/dx2{power: 1.0} * u{power: 1.0}_r']
         }
     }
 
     solver_config = {
         "glob_solver": {
             "mode": "mat",
-            "reverse": False
+            "reverse": True
         },
         "Cache": {
             "use_cache": False,
@@ -681,7 +688,6 @@ def KdV_equation():
 
 
 def burgers_equation_small_grid():
-
     path = "data/burgers_equation_small_grid/"
     df = pd.read_csv(f'{path}burgers_sln_100.csv', header=None)
     data = df.values
@@ -731,7 +737,7 @@ def burgers_equation_small_grid():
             "variable_names": ['u', ],
             "max_deriv_order": (1, 1),
             "equation_terms_max_number": 3,  #
-            "equation_factors_max_number": 2,
+            "equation_factors_max_number": {'factors_num': [1, 2], 'probas': [0.7, 0.3]},
             "eq_sparsity_interval": (1e-8, 5.0),  #
             # "deriv_method": "ANN",  #
             # "deriv_method_kwargs": {"epochs_max": 1000},  #
@@ -740,8 +746,11 @@ def burgers_equation_small_grid():
             "memory_for_cache": 25,
             "prune_domain": False
         },
+        "results": {
+            "level_num": 2
+        },
         "glob_epde": {
-            "test_iter_limit": 1,  # how many times to launch algorithm (one time - 2-3 equations)
+            "test_iter_limit": 10,  # how many times to launch algorithm (one time - 2-3 equations)
             "save_result": True,
             "load_result": False
         }
@@ -757,6 +766,9 @@ def burgers_equation_small_grid():
         },
         "params": {
             "init_nodes": 'du/dx1{power: 1.0}_r'
+        },
+        "correct_structures": {
+            "list_unique": ['du/dx1{power: 1.0}_r', 'du/dx2{power: 1.0} * u{power: 1.0}']
         }
     }
 
@@ -796,7 +808,6 @@ def burgers_equation_small_grid():
 
 
 def hunter_prey():
-
     path = "data/hunter_prey/"
 
     t = np.load(f'{path}t.npy')
@@ -808,9 +819,16 @@ def hunter_prey():
 
     derives = None
 
+    t = np.linspace(0, 8, 1000)
     param = [t, ]
 
-    bconds = False  # if there are no boundary conditions
+    x0, y0 = 1., 1.
+    bnd1_0 = torch.from_numpy(np.array([[0]], dtype=np.float64)).float()
+    bndval1_0 = torch.from_numpy(np.array([[x0]], dtype=np.float64))
+    bnd1_1 = torch.from_numpy(np.array([[0]], dtype=np.float64)).float()
+    bndval1_1 = torch.from_numpy(np.array([[y0]], dtype=np.float64))
+
+    bconds = [[bnd1_0, bndval1_0, 0], [bnd1_1, bndval1_1, 1]]
 
     noise = False
     variance_arr = [0.10] if noise else [0]
@@ -818,7 +836,7 @@ def hunter_prey():
     global_modules = {
         "global_config": {
             "discovery_module": "EPDE",
-            "dimensionality": x.ndim + 1,
+            "dimensionality": x.ndim - 1,
             "variance_arr": variance_arr
         }
     }
@@ -826,31 +844,81 @@ def hunter_prey():
     epde_config = {
         "epde_search": {
             "use_solver": False,
-            "boundary": 10, #
-            "verbose_params": {"show_moeadd_epochs": True}
+            "boundary": 10,  #
+            "verbose_params": {"show_moeadd_epochs": False}
         },
         "set_moeadd_params": {
             "population_size": 5,  #
-            "training_epochs": 7
+            "training_epochs": 100
         },
         "fit": {
-            "variable_names": ['u', 'v'], #
+            "variable_names": ['u', 'v'],  # list of objective function names
             "max_deriv_order": (1,),
             "equation_terms_max_number": 3,  #
-            "equation_factors_max_number": {'factors_num': [1, 2], 'probas': [0.8, 0.2]},
-            "data_fun_pow": 1,
+            "equation_factors_max_number": {'factors_num': [1, 2], 'probas': [0.8, 0.2]}, # the amount of tokens in the term and their probability of occurrence
+            "data_fun_pow": 1,  # the maximum degree of one token in the term
             "eq_sparsity_interval": (1e-10, 1e-2),  #
             "deriv_method": "poly",
             "deriv_method_kwargs": {'smooth': False},
         },
+        "results": {
+            "level_num": 1
+        },
         "glob_epde": {
             "test_iter_limit": 50,  # how many times to launch algorithm (one time - 2-3 equations)
-            "save_result": True,
-            "load_result": False
+            "save_result": False,
+            "load_result": True
         }
     }
 
-    config_modules = {**global_modules, **epde_config}
+    bamt_config = {
+        "glob_bamt": {
+            "sample_k": 35,
+            "lambda": 0.01,
+        },
+        "correct_structures": {
+            "list_unique": ['v{power: 1.0} * u{power: 1.0}_v', 'v{power: 1.0}_v', 'dv/dx1{power: 1.0}_r_v',
+                            'v{power: 1.0} * u{power: 1.0}_u', 'u{power: 1.0}_u', 'du/dx1{power: 1.0}_r_u']
+        }
+    }
+
+    img_dir = f'{path}hunter_prey_img'
+
+    if not (os.path.isdir(img_dir)):
+        os.mkdir(img_dir)
+
+    solver_config = {
+        "glob_solver": {
+            "mode": "autograd",
+            "reverse": False
+        },
+        "Cache": {
+            "use_cache": True,
+            "save_always": True,
+            "cache_dir": f"{path}cache/",
+            "model_randomize_parameter": 1e-5
+        },
+        "Optimizer": {
+            "learning_rate": 1e-4,
+            "lambda_bound": 100,
+        },
+        "NN": {
+            "h": 0.00001
+        },
+        "StopCriterion": {
+            "eps": 1e-6,
+            "tmax": 5e6,
+            "patience": 3,
+            "no_improvement_patience": 500
+        },
+        "Plot": {
+            "step_plot_print": False,
+            "step_plot_save": False,
+            "image_save_dir": img_dir,
+        }
+    }
+
+    config_modules = {**global_modules, **epde_config, **bamt_config, **solver_config}
 
     with open(f'{path}config_modules.json', 'w') as fp:
         json.dump(config_modules, fp)

@@ -8,127 +8,177 @@ import bamt.Preprocessors as pp
 from pgmpy.estimators import K2Score
 import dill as pickle
 from sklearn import preprocessing
+import re
+import itertools
 
 
-def get_equations(synth_data, df_res, config_bamt):
-    equations = []
+def token_check(columns, objects_res, config_bamt):
+    list_correct_structures_unique = config_bamt.params["correct_structures"]["list_unique"]
+    variable_names = config_bamt.params["fit"]["variable_names"]
+
+    list_correct_structures = set()
+    for term in list_correct_structures_unique:
+        str_r = '_r' if '_r' in term else ''
+        str_elem = ''
+        if any(f'_{elem}' in term for elem in variable_names):
+            for elem in variable_names:
+                if f'_{elem}' in term:
+                    term = term.replace(f'_{elem}', "")
+                    str_elem = f'_{elem}'
+        # for case if several terms exist
+        arr_term = re.sub('_r', '', term).split(' * ')
+        perm_set = list(itertools.permutations([i for i in range(len(arr_term))]))
+        for p_i in perm_set:
+            temp = " * ".join([arr_term[i] for i in p_i]) + str_r + str_elem
+            list_correct_structures.add(temp)
+
+    def out_red(text):
+        print("\033[31m {}".format(text), end='')
+
+    def out_green(text):
+        print("\033[32m {}".format(text), end='')
+
+    met, k_sys = 0, len(objects_res)
+    k_min = k_sys if k_sys < 5 else 5
+
+    for object_row in objects_res[:k_min]:
+        k_c, k_l = 0, 0
+        for col in columns:
+            if col in object_row:
+                if col in list_correct_structures:
+                    k_c += 1
+                    out_green(f'{col}')
+                    print(f'\033[0m:{object_row[col]}')
+                else:
+                    k_l += 1
+                    out_red(f'{col}')
+                    print(f'\033[0m:{object_row[col]}')
+        print(f'correct structures = {k_c}/{len(list_correct_structures_unique)}')
+        print(f'incorrect structures = {k_l}')
+        print('--------------------------')
+
+    for object_row in objects_res:
+        for temp in object_row.keys():
+            if temp in list_correct_structures:
+                met += 1
+
+    print(f'average value (equation - {k_sys}) = {met / k_sys}')
+
+
+def get_objects(synth_data, config_bamt):
+    """
+        Parameters
+        ----------
+        synth_data : pd.dataframe
+            The fields in the table are structures of received systems/equations,
+            where each record/row contains coefficients at each structure
+        config_bamt:  class Config from TEDEouS/config.py contains the initial configuration of the task
+
+        Returns
+        -------
+        objects_result - list objects (combination of equations or systems)
+    """
+    objects = []  # equations or systems
     for i in range(len(synth_data)):
-        equation = {}
-        for col in df_res.columns:
-            equation[synth_data[col].name] = synth_data[col].values[i]
-        equations.append(equation)
+        object_row = {}
+        for col in synth_data.columns:
+            object_row[synth_data[col].name] = synth_data[col].values[i]
+        objects.append(object_row)
 
-    equations_result = []
+    objects_result = []
     for i in range(len(synth_data)):
-        equation_res = {}
-        for key, value in equations[i].items():
+        object_res = {}
+        for key, value in objects[i].items():
             if abs(float(value)) > config_bamt.params["glob_bamt"]["lambda"]:
-                equation_res[key] = value
-        equations_result.append(equation_res)
-        print(f'{i + 1}.{equation_res}')
+                object_res[key] = value
+        objects_result.append(object_res)
+        # print(f'{i + 1}.{object_res}')  # full string  output
+        # print('--------------------------')
 
-    return equations_result
+    return objects_result
 
 
-def bs_experiment(df, config_bamt, title):
+def bs_experiment(df, cfg, title):
+
+    if not (os.path.exists(f'data/{title}/bamt_result')):
+        os.mkdir(f'data/{title}/bamt_result')
+
+    if cfg.params["glob_bamt"]["load_result"]:
+        with open(f'data/{title}/bamt_result/data_equations_{cfg.params["glob_bamt"]["sample_k"]}.pickle', 'rb') as f:
+            return pickle.load(f)
+
     # Rounding values
     for col in df.columns:
         df[col] = df[col].round(decimals=10)
     # Deleting rows with condition
-    df = df.loc[(df.sum(axis=1) != -1), (df.sum(axis=0) != 0)]
+    df = df.loc[(df.sum(axis=1) != -len(cfg.params["fit"]["variable_names"])), (df.sum(axis=0) != 0)]
     # Deleting null columns
     df = df.loc[:, (df != 0).any(axis=0)]
     # (df != 0).sum(axis = 0)
 
-    df_new = df
-    for col in df_new.columns:
-        if '_r' not in col and col + "_r" in df_new.columns:  # union of repeated structures
-            temp = df_new[col + "_r"] + df_new[col]
-            arr_value = temp.unique()
-            arr_value.sort()
-            if len(arr_value) == 2 and (arr_value == np.array([-1, 0])).all(): # separation of the structures of the right part (for conversion to a discrete type)
-                df_new[col + "_r"] = df_new[col + "_r"] + df_new[col]
-                df_new = df_new.drop(col, axis=1)
-            else:
-                df_new[col] = df_new[col + "_r"] + df_new[col]
-                df_new = df_new.drop(col + "_r", axis=1)
+    df_initial = df.copy()
 
-    for col in df_new.columns:
+    for col in df.columns:
         if '_r' in col:
-            df_new = df_new.astype({col: "int64"})
+            df = df.astype({col: "int64"})
+            df = df.astype({col: "str"})
 
-    discretizer = preprocessing.KBinsDiscretizer(n_bins=5, encode='ordinal', strategy='quantile')
-    p = pp.Preprocessor([('discretizer', discretizer)])  # only discretization
-    discretized_data, est = p.apply(df_new)
+    all_r = df.shape[0]
+    unique_r = df.groupby(df.columns.tolist(), as_index=False).size().shape[0]
+
+    print(f'Из {all_r} полученных систем \033[1m {unique_r} уникальных \033[0m ({int(unique_r / all_r * 100)} %)')
+
+    l_r, l_left = [], []
+    for term in list(df.columns):
+        if '_r' in term:
+            l_r.append(term)
+        else:
+            l_left.append(term)
+    df = df[l_left + l_r]
+
+    discretizer = preprocessing.KBinsDiscretizer(n_bins=10, encode='ordinal', strategy='quantile')
+    encoder = preprocessing.LabelEncoder()
+    p = pp.Preprocessor([('encoder', encoder), ('discretizer', discretizer)])
+    data, est = p.apply(df)
     info_r = p.info
 
-    # Initializing Bayessian Network
-    bn = Nets.HybridBN(has_logit=True,
-                       use_mixture=False)  # type of Bayessian Networks (Hybrid - the right part has discrete values)
-    bn.add_nodes(info_r)  # Create nodes
+    bn = Nets.HybridBN(has_logit=True, use_mixture=True)
+    bn.add_nodes(info_r)
 
-    df_temp = df_new
-    if "C" in df_temp.columns.tolist():
-        df_temp = df_temp.drop("C", axis=1)
-    init_nodes = (df_temp != 0).sum(axis=0).idxmax()
-    params = {"init_nodes": [init_nodes]} if not config_bamt.params["params"]["init_nodes"] else config_bamt.params["params"]
-    bn.add_edges(discretized_data, scoring_function=('K2', K2Score), params=params)
-    # print(bn.get_info())
+    df_temp = (df_initial[[col for col in df_initial.columns if '_r' in col]] != 0).copy()
+    print(df_temp.sum(axis=0).sort_values(ascending=False)[:len(cfg.params["fit"]["variable_names"])])
+    init_nodes_list = []
+    for i in range(len(cfg.params["fit"]["variable_names"])):
+        init_nodes = df_temp.sum(axis=0).idxmax()
+        init_nodes_list.append(init_nodes)
+        df_temp = df_temp.drop(init_nodes, axis=1)
+    print(init_nodes_list)
+    params = {"init_nodes": init_nodes_list} if not cfg.params["params"]["init_nodes"] else cfg.params[
+        "params"]
 
-    # bn.plot(f'{title}_{mesh}_plot.html') # redefine
+    bn.add_edges(data, scoring_function=('K2', K2Score), params=params)
+    bn.fit_parameters(df_initial)
 
-    # Parameters Learning and Sample
-    bn.fit_parameters(df_new)
+    objects_res = []
+    while len(objects_res) < cfg.params["glob_bamt"]["sample_k"]:
+        synth_data = bn.sample(30, as_df=True)
+        temp_res = get_objects(synth_data, cfg)
 
-    # Sample() function
-    df_res = df_new
-    synth_data = bn.sample(config_bamt.params["glob_bamt"]["sample_k"], as_df=True)
-    equations_main = get_equations(synth_data, df_res, config_bamt)
+        if len(temp_res) + len(objects_res) > cfg.params["glob_bamt"]["sample_k"]:
+            objects_res += temp_res[:cfg.params["glob_bamt"]["sample_k"] - len(objects_res)]
+        else:
+            objects_res += temp_res
 
-    # display distribution of coefficients for structures
-    synth_data_r = bn.sample(1000, as_df=True)
-    equations_r = get_equations(synth_data_r, df_res, config_bamt)
-    d_main, k = {}, 0
+    if cfg.params["correct_structures"]["list_unique"] is not None:
+        token_check(df_initial.columns, objects_res, cfg)
 
-    for i in range(len(equations_r)):
-        for temp, coeff in equations_r[i].items():
-            if temp in d_main:
-                d_main[temp] += [0 for i in range(k - len(d_main[temp]))] + [coeff]
-            else:
-                d_main[temp] = [0 for i in range(k)] + [coeff]
+    if cfg.params["glob_bamt"]["save_result"]:
+        number_of_files = len(os.listdir(path=f"data/{title}/bamt_result/"))
+        if os.path.exists(f'data/{title}/bamt_result/data_equations_{len(objects_res)}.csv'):
+            with open(f'data/{title}/bamt_result/data_equations_{len(objects_res)}_{number_of_files}.pickle', 'wb') as f:
+                pickle.dump(objects_res, f, pickle.HIGHEST_PROTOCOL)
+        else:
+            with open(f'data/{title}/bamt_result/data_equations_{len(objects_res)}.pickle', 'wb') as f:
+                pickle.dump(objects_res, f, pickle.HIGHEST_PROTOCOL)
 
-        k += 1
-
-    for key, value in d_main.items():
-        if len(value) < k:
-            d_main[key] = d_main[key] + [0 for i in range(k - len(d_main[key]))]
-
-    d = pd.DataFrame(d_main)
-    for col in d.columns:
-        d = d.astype({col: np.float64})
-
-    d.hist(column=d.columns[:], figsize=(20, 15), bins=100, rwidth=0.6)
-    plt.suptitle("Distribution of coefficients for structures (with 0)")
-
-    df_Nan = d.replace(0, np.NaN)
-    df_Nan.hist(column=d.columns[:], figsize=(20, 15), bins=100, rwidth=0.6)
-    plt.suptitle("Distribution of coefficients for structures (without 0)")
-
-    # save result
-    if not (os.path.exists(f'data/{title}/bamt_result')):
-        os.mkdir(f'data/{title}/bamt_result')
-
-    number_of_files = len(os.listdir(path=f"data/{title}/bamt_result/"))
-
-    if os.path.exists(f'data/{title}/bamt_result/data_equations_{config_bamt.params["glob_bamt"]["sample_k"]}.csv'):
-        with open(f'data/{title}/bamt_result/data_equations_{config_bamt.params["glob_bamt"]["sample_k"]}_{number_of_files}.pickle', 'wb') as f:
-            pickle.dump(equations_main, f, pickle.HIGHEST_PROTOCOL)
-    else:
-        with open(f'data/{title}/bamt_result/data_equations_{config_bamt.params["glob_bamt"]["sample_k"]}.pickle', 'wb') as f:
-            pickle.dump(equations_main, f, pickle.HIGHEST_PROTOCOL)
-
-    # # Load data
-    # with open(f'data/{title}/bamt_result/data_equations_{config_bamt.params["glob_bamt"]["sample_k"]}.pickle', 'rb') as f:
-    #     equations_result = pickle.load(f)
-
-    return equations_main
+    return objects_res

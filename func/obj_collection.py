@@ -29,9 +29,9 @@ def dict_update(d_main, term, coeff, k):
 
 def equation_table(k, equation, dict_main, dict_right):
     """
-    Collecting the obtained values (coefficients and structures) into a common table (the right and left parts of the equation are considered separately)
+        Collecting the obtained values (coefficients and structures) into a common table (the right and left parts of the equation are considered separately)
 
-    Parameters
+        Parameters
         ----------
         equation:
         k : Number of equations (final)
@@ -70,11 +70,11 @@ def equation_table(k, equation, dict_main, dict_right):
 
 def object_table(res, variable_name, table_main, k):
     """
-    Collecting the obtained objects (system/equation) into a common table
+        Collecting the obtained objects (system/equation) into a common table
 
-    Parameters
+        Parameters
         ----------
-        variable_name:
+        variable_name: List of objective function names
         res : Pareto front of detected equations/systems
         table_main: List of dictionaries
         k : Number of equations/system (final)
@@ -86,6 +86,7 @@ def object_table(res, variable_name, table_main, k):
     """
     for list_SoEq in res:  # List SoEq - an object of the class 'epde.structure.main_structures.SoEq'
         for SoEq in list_SoEq:
+            # if 3 < max(SoEq.obj_fun[2:]) < 5: # to filter the complexity of equations/system
             # variable_name = SoEq.vals.equation_keys # param for object_epde_search
             for n, value in enumerate(variable_name):
                 gene = SoEq.vals.chromosome.get(value)
@@ -95,30 +96,6 @@ def object_table(res, variable_name, table_main, k):
             print(k)
 
     return table_main, k
-
-
-def update_data(df):
-    # Rounding values
-    for col in df.columns:
-        df[col] = df[col].round(decimals=10)
-
-    # Deleting null columns
-    df = df.loc[:, (df != 0).any(axis=0)]
-
-    df_new = df
-    for col in df_new.columns:
-        if '_r' not in col and col + "_r" in df_new.columns:  # union of repeated structures
-            temp = df_new[col + "_r"] + df_new[col]
-            arr_value = temp.unique()
-            arr_value.sort()
-            if len(arr_value) == 2 and (arr_value == np.array([-1, 0])).all():  # separation of the structures of the right part (for conversion to a discrete type)
-                df_new[col + "_r"] = df_new[col + "_r"] + df_new[col]
-                df_new = df_new.drop(col, axis=1)
-            else:
-                df_new[col] = df_new[col + "_r"] + df_new[col]
-                df_new = df_new.drop(col + "_r", axis=1)
-
-    return df_new
 
 
 def preprocessing_bamt(variable_name, table_main, k):
@@ -143,9 +120,7 @@ def preprocessing_bamt(variable_name, table_main, k):
     # creating dataframe from a table and updating the data
     for n, dict_var in enumerate(table_main):
         for var_name, general_dict in dict_var.items():
-            temp = pd.DataFrame(general_dict)
-            total_result = update_data(temp)
-            data_frame_main[n][var_name] = total_result
+            data_frame_main[n][var_name] = pd.DataFrame(general_dict)
 
     for n, dict_var in enumerate(variable_name):
         data_frame_temp = data_frame_main[n].get(dict_var).copy()

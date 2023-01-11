@@ -1,15 +1,14 @@
 import math
 import os
+import pickle
 import random
 
 import numpy as np
 import pandas as pd
 import epde.interface.interface as epde_alg
 from epde.evaluators import CustomEvaluator
-
 from epde.interface.prepared_tokens import CacheStoredTokens, CustomTokens
 
-# from func import eq_collection as collection
 from func import obj_collection as collection
 from func.confidence_region import get_rms
 
@@ -46,10 +45,10 @@ def equation_fit(data, grid, derives, config_epde):
     Method epde_search.fit() is used to initiate the equation search.
     '''
     epde_search_obj.fit(data=data, variable_names=config_epde.params["fit"]["variable_names"],
-                        data_fun_pow=config_epde.params["fit"]["data_fun_pow"], # максимальная степень одного множителя (переменной) в слагаемом
+                        data_fun_pow=config_epde.params["fit"]["data_fun_pow"],
                         max_deriv_order=config_epde.params["fit"]["max_deriv_order"],
                         equation_terms_max_number=config_epde.params["fit"]["equation_terms_max_number"],
-                        equation_factors_max_number=config_epde.params["fit"]["equation_factors_max_number"], # максимальное количество множителей в слагаемом
+                        equation_factors_max_number=config_epde.params["fit"]["equation_factors_max_number"],
                         coordinate_tensors=grid, eq_sparsity_interval=config_epde.params["fit"]["eq_sparsity_interval"],
                         derivs=[derives] if derives is not None else None,
                         deriv_method=config_epde.params["fit"]["deriv_method"],
@@ -79,30 +78,45 @@ def epde_equations(u, grid_u, derives, cfg, variance, title):
     # noise = np.array(noise)
     #
     # u_total = u + noise
+    # Creating results folder
+    if not (os.path.exists(f'data/{title}/epde_result')):
+        os.mkdir(f'data/{title}/epde_result')
+
+    if cfg.params["glob_epde"]["load_result"]:
+        # Need to check the existence of the file or send the path
+        return pd.read_csv(f'data/{title}/epde_result/output_main_{title}.csv', index_col='Unnamed: 0', sep='\t', encoding='utf-8'), False
 
     k = 0  # number of equations (final)
-    variable_names = cfg.params["fit"]["variable_names"]
+    variable_names = cfg.params["fit"]["variable_names"] # list of objective function names
     table_main = [{i: [{}, {}]} for i in variable_names]  # dict/table coefficients left/right parts of the equation
+
+    # Loading temporary data (for saving temp results)
+    if os.path.exists(f'data/{title}/epde_result/table_main_general.pickle'):
+        with open(f'data/{title}/epde_result/table_main_general.pickle', 'rb') as f:
+            table_main = pickle.load(f)
+        with open(f'data/{title}/epde_result/k_main_general.pickle', 'rb') as f:
+            k = pickle.load(f)
 
     for test_idx in np.arange(cfg.params["glob_epde"]["test_iter_limit"]):
         epde_obj = equation_fit(u, grid_u, derives, cfg)
         res = epde_obj.equation_search_results(only_print=False, level_num=cfg.params["results"]["level_num"])  # result search
 
         table_main, k = collection.object_table(res, variable_names, table_main, k)
+        # To save temporary data
+        with open(f'data/{title}/epde_result/table_main_general.pickle', 'wb') as f:
+            pickle.dump(table_main, f, pickle.HIGHEST_PROTOCOL)
+
+        with open(f'data/{title}/epde_result/k_main_general.pickle', 'wb') as f:
+            pickle.dump(k, f, pickle.HIGHEST_PROTOCOL)
+
         print(test_idx)
 
     frame_main = collection.preprocessing_bamt(variable_names, table_main, k)
 
-    # Save
-    if not (os.path.exists(f'data/{title}/epde_result')):
-        os.mkdir(f'data/{title}/epde_result')
+    if cfg.params["glob_epde"]["save_result"]:
+        if os.path.exists(f'data/{title}/epde_result/output_main_{title}.csv'):
+            frame_main.to_csv(f'data/{title}/epde_result/output_main_{title}_{len(os.listdir(path=f"data/{title}/epde_result/"))}.csv', sep='\t', encoding='utf-8')
+        else:
+            frame_main.to_csv(f'data/{title}/epde_result/output_main_{title}.csv', sep='\t', encoding='utf-8')
 
-    if os.path.exists(f'data/{title}/epde_result/output_main_{title}.csv'):
-        frame_main.to_csv(f'data/{title}/epde_result/output_main_{title}_{len(os.listdir(path=f"data/{title}/epde_result/"))}.csv', sep='\t', encoding='utf-8')
-    else:
-        frame_main.to_csv(f'data/{title}/epde_result/output_main_{title}.csv', sep='\t', encoding='utf-8')
-
-    # # Load data
-    # frame_main = pd.read_csv(f'data/{title}/epde_result/output_main_{title}.csv', index_col='Unnamed: 0', sep='\t', encoding='utf-8')
-
-    return frame_main
+    return frame_main, epde_obj

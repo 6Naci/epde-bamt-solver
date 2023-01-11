@@ -51,11 +51,14 @@ DEFAULT_CONFIG_EBS = '''
 "sample_k": 35,
 "lambda": 0.001,
 "plot": false,
-"save_equations": true,
-"load_equations": false
+"save_result": false,
+"load_result": false
 },
 "params": {
 "init_nodes": false
+},
+"correct_structures":{
+"list_unique": null
 },
 
 "SOLVER_config": "commentary",
